@@ -37,16 +37,20 @@ interface DbRow {
   id: string;
   created_at: string;
   business_type: string | null;
-  tax_2017_paid: number;
-  sales_before: number;
+  taxable: number;
   inflation_rate: number;
-  rate_before: number;
-  tax_before: number;
-  sales_with: number;
-  rate_with: number;
-  tax_with: number;
-  difference: number;
-  tax_2018: number;
+  inflated_amount: number;
+  profit_tax_base: number;
+  curfew_rate_base: number;
+  curfew_base: number;
+  total_base: number;
+  profit_tax_infl: number;
+  curfew_rate_infl: number;
+  curfew_infl: number;
+  total_infl: number;
+  profit_tax_diff: number;
+  curfew_diff: number;
+  total_diff: number;
 }
 
 function rowToItem(r: DbRow): HistoryItem {
@@ -54,33 +58,41 @@ function rowToItem(r: DbRow): HistoryItem {
     id: r.id,
     createdAt: r.created_at,
     businessType: r.business_type,
-    tax2017Paid: Number(r.tax_2017_paid),
-    salesBefore: Number(r.sales_before),
+    taxable: Number(r.taxable),
     inflationRate: Number(r.inflation_rate),
-    rateBefore: Number(r.rate_before),
-    taxBefore: Number(r.tax_before),
-    salesWith: Number(r.sales_with),
-    rateWith: Number(r.rate_with),
-    taxWith: Number(r.tax_with),
-    difference: Number(r.difference),
-    tax2018: Number(r.tax_2018),
+    inflatedAmount: Number(r.inflated_amount),
+    profitTaxBase: Number(r.profit_tax_base),
+    curfewRateBase: Number(r.curfew_rate_base),
+    curfewBase: Number(r.curfew_base),
+    totalBase: Number(r.total_base),
+    profitTaxInfl: Number(r.profit_tax_infl),
+    curfewRateInfl: Number(r.curfew_rate_infl),
+    curfewInfl: Number(r.curfew_infl),
+    totalInfl: Number(r.total_infl),
+    profitTaxDiff: Number(r.profit_tax_diff),
+    curfewDiff: Number(r.curfew_diff),
+    totalDiff: Number(r.total_diff),
   };
 }
 
-function itemToInsert(userId: string, result: CalcResult, businessType: string | null) {
+function itemToInsert(userId: string, r: CalcResult, businessType: string | null) {
   return {
     user_id: userId,
     business_type: businessType,
-    tax_2017_paid: result.tax2017Paid,
-    sales_before: result.salesBefore,
-    inflation_rate: result.inflationRate,
-    rate_before: result.rateBefore,
-    tax_before: result.taxBefore,
-    sales_with: result.salesWith,
-    rate_with: result.rateWith,
-    tax_with: result.taxWith,
-    difference: result.difference,
-    tax_2018: result.tax2018,
+    taxable: r.taxable,
+    inflation_rate: r.inflationRate,
+    inflated_amount: r.inflatedAmount,
+    profit_tax_base: r.profitTaxBase,
+    curfew_rate_base: r.curfewRateBase,
+    curfew_base: r.curfewBase,
+    total_base: r.totalBase,
+    profit_tax_infl: r.profitTaxInfl,
+    curfew_rate_infl: r.curfewRateInfl,
+    curfew_infl: r.curfewInfl,
+    total_infl: r.totalInfl,
+    profit_tax_diff: r.profitTaxDiff,
+    curfew_diff: r.curfewDiff,
+    total_diff: r.totalDiff,
   };
 }
 

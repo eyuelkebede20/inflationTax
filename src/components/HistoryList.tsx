@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { HistoryItem } from "../lib/storage";
-import { formatBirr, formatDate } from "../lib/format";
+import { formatBirr, formatBirrDelta, formatDate } from "../lib/format";
 
 interface Props {
   items: HistoryItem[];
@@ -32,13 +32,12 @@ export default function HistoryList({ items, loading }: Props) {
         <thead>
           <tr>
             <th>Business</th>
-            <th className="num">2017 tax paid</th>
-            <th className="num">Sales (pre-infl.)</th>
-            <th className="num">Tax (pre-infl.)</th>
-            <th className="num">Sales (infl.)</th>
-            <th className="num">Tax (infl.)</th>
-            <th className="num">Difference</th>
-            <th className="num">2018 tax</th>
+            <th className="num">Taxable</th>
+            <th className="num">Profit tax</th>
+            <th className="num">Curfew tax</th>
+            <th className="num">Total tax</th>
+            <th className="num">Total w/ inflation</th>
+            <th className="num">Extra this year</th>
           </tr>
         </thead>
         <tbody>
@@ -50,14 +49,13 @@ export default function HistoryList({ items, loading }: Props) {
                 </div>
                 <div className="muted small">{formatDate(item.createdAt)}</div>
               </td>
-              <td className="num">{formatBirr(item.tax2017Paid)}</td>
-              <td className="num">{formatBirr(item.salesBefore)}</td>
-              <td className="num">{formatBirr(item.taxBefore)}</td>
-              <td className="num">{formatBirr(item.salesWith)}</td>
-              <td className="num">{formatBirr(item.taxWith)}</td>
-              <td className="num">{formatBirr(item.difference)}</td>
-              <td className="num" style={{ fontWeight: 700 }}>
-                {formatBirr(item.tax2018)}
+              <td className="num">{formatBirr(item.taxable)}</td>
+              <td className="num">{formatBirr(item.profitTaxBase)}</td>
+              <td className="num">{formatBirr(item.curfewBase)}</td>
+              <td className="num">{formatBirr(item.totalBase)}</td>
+              <td className="num">{formatBirr(item.totalInfl)}</td>
+              <td className="num delta-up" style={{ fontWeight: 700 }}>
+                {formatBirrDelta(item.totalDiff)}
               </td>
             </tr>
           ))}

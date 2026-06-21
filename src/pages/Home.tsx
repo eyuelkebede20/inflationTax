@@ -52,11 +52,11 @@ export default function Home() {
   return (
     <div className="container">
       <div className="hero">
-        <h1>How inflation moves your 2018 tax.</h1>
+        <h1>How much more tax inflation costs you.</h1>
         <p>
-          Enter a business's 2017 tax paid and sales. InflaTax inflates the
-          sales, re-brackets them, and shows the extra tax inflation adds — and
-          the new 2018 total.
+          Enter a taxable amount. InflaTax computes the profit tax and curfew tax
+          on it, inflates it by the current rate, and shows the extra tax you owe
+          this year from bracket creep.
         </p>
       </div>
 
@@ -73,30 +73,31 @@ export default function Home() {
           <h2>Latest result</h2>
           <div className="result-cards">
             <div className="result-card">
-              <div className="k">Tax before inflation</div>
+              <div className="k">Profit tax (before)</div>
               <div className="result-big">
-                {formatBirr(lastResult.taxBefore)}
-              </div>
-              <div className="muted small">
-                {formatRate(lastResult.rateBefore)} bracket
+                {formatBirr(lastResult.profitTaxBase)}
               </div>
             </div>
             <div className="result-card">
-              <div className="k">Tax with inflation</div>
-              <div className="result-big">{formatBirr(lastResult.taxWith)}</div>
+              <div className="k">Curfew tax (before)</div>
+              <div className="result-big">
+                {formatBirr(lastResult.curfewBase)}
+              </div>
               <div className="muted small">
-                {formatRate(lastResult.rateWith)} bracket
+                {formatRate(lastResult.curfewRateBase)} rate
               </div>
             </div>
             <div className="result-card">
-              <div className="k">Inflation difference</div>
-              <div className="result-big delta-up">
-                {formatBirrDelta(lastResult.difference)}
+              <div className="k">Total with inflation</div>
+              <div className="result-big">
+                {formatBirr(lastResult.totalInfl)}
               </div>
             </div>
             <div className="result-card" style={{ borderColor: "var(--brand)" }}>
-              <div className="k">2018 total tax</div>
-              <div className="result-big">{formatBirr(lastResult.tax2018)}</div>
+              <div className="k">Extra paid this year</div>
+              <div className="result-big delta-up">
+                {formatBirrDelta(lastResult.totalDiff)}
+              </div>
             </div>
           </div>
           <p className="muted small" style={{ marginBottom: 0 }}>

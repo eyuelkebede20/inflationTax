@@ -8,23 +8,30 @@ create table if not exists public.user_settings (
   updated_at timestamptz not null default now()
 );
 
--- Saved calculations / history (one row per business entry)
+-- Saved calculations / history (one row per taxable-amount entry)
 drop table if exists public.calculations cascade;
 create table public.calculations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
-  business_type text,                       -- Gosa daldala
-  tax_2017_paid numeric not null,           -- Taaksii waliigala bara 2017 kafale
-  sales_before numeric not null,            -- sales before inflation
+  business_type text,
+  taxable numeric not null,             -- base taxable amount (before inflation)
   inflation_rate numeric not null,
-  rate_before numeric not null,             -- bracket rate on sales_before
-  tax_before numeric not null,              -- sales_before * rate_before
-  sales_with numeric not null,              -- sales_before * (1 + inflation_rate)
-  rate_with numeric not null,               -- bracket rate on sales_with
-  tax_with numeric not null,                -- sales_with * rate_with
-  difference numeric not null,              -- Garaagaruma = tax_with - tax_before
-  tax_2018 numeric not null                 -- Taaksii Bara 2018 = tax_2017_paid + difference
+  inflated_amount numeric not null,     -- taxable * (1 + inflation_rate)
+  -- before inflation
+  profit_tax_base numeric not null,
+  curfew_rate_base numeric not null,
+  curfew_base numeric not null,
+  total_base numeric not null,
+  -- with inflation
+  profit_tax_infl numeric not null,
+  curfew_rate_infl numeric not null,
+  curfew_infl numeric not null,
+  total_infl numeric not null,
+  -- inflation-driven increases
+  profit_tax_diff numeric not null,
+  curfew_diff numeric not null,
+  total_diff numeric not null
 );
 
 -- Row Level Security

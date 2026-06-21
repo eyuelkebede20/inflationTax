@@ -58,7 +58,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="footer">
-        InflaTax · how inflation re-brackets sales and raises next year's tax
+        InflaTax · profit tax + curfew tax, and how inflation raises both
       </footer>
     </div>
   );
