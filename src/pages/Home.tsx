@@ -9,7 +9,7 @@ import {
   type HistoryItem,
 } from "../lib/storage";
 import type { CalcResult } from "../lib/calc";
-import { formatBirr } from "../lib/format";
+import { formatBirr, formatBirrDelta, formatRate } from "../lib/format";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -35,12 +35,12 @@ export default function Home() {
     };
   }, [userId, authLoading]);
 
-  async function handleCalculated(result: CalcResult, label: string | null) {
+  async function handleCalculated(result: CalcResult, businessType: string | null) {
     setError(null);
     setLastResult(result);
     setSaving(true);
     try {
-      const saved = await saveCalculation(userId, result, label);
+      const saved = await saveCalculation(userId, result, businessType);
       setHistory((prev) => [saved, ...prev]);
     } catch (e) {
       setError((e as Error).message ?? "Failed to save calculation.");
@@ -52,11 +52,11 @@ export default function Home() {
   return (
     <div className="container">
       <div className="hero">
-        <h1>Inflation-adjusted tax, two years at a glance.</h1>
+        <h1>How inflation moves your 2018 tax.</h1>
         <p>
-          Type your 2017 EC taxable amount. InflaTax derives the prior year
-          (2016 EC) from inflation and computes profit tax and the schedule
-          (curfew) rate for both years.
+          Enter a business's 2017 tax paid and sales. InflaTax inflates the
+          sales, re-brackets them, and shows the extra tax inflation adds — and
+          the new 2018 total.
         </p>
       </div>
 
@@ -73,32 +73,34 @@ export default function Home() {
           <h2>Latest result</h2>
           <div className="result-cards">
             <div className="result-card">
-              <div className="k">2017 profit tax</div>
+              <div className="k">Tax before inflation</div>
               <div className="result-big">
-                {formatBirr(lastResult.profitTax2017)}
+                {formatBirr(lastResult.taxBefore)}
+              </div>
+              <div className="muted small">
+                {formatRate(lastResult.rateBefore)} bracket
               </div>
             </div>
             <div className="result-card">
-              <div className="k">2017 curfew</div>
-              <div className="result-big">
-                {formatBirr(lastResult.curfew2017)}
+              <div className="k">Tax with inflation</div>
+              <div className="result-big">{formatBirr(lastResult.taxWith)}</div>
+              <div className="muted small">
+                {formatRate(lastResult.rateWith)} bracket
               </div>
             </div>
             <div className="result-card">
-              <div className="k">2016 profit tax</div>
-              <div className="result-big">
-                {formatBirr(lastResult.profitTax2016)}
+              <div className="k">Inflation difference</div>
+              <div className="result-big delta-up">
+                {formatBirrDelta(lastResult.difference)}
               </div>
             </div>
-            <div className="result-card">
-              <div className="k">2016 curfew</div>
-              <div className="result-big">
-                {formatBirr(lastResult.curfew2016)}
-              </div>
+            <div className="result-card" style={{ borderColor: "var(--brand)" }}>
+              <div className="k">2018 total tax</div>
+              <div className="result-big">{formatBirr(lastResult.tax2018)}</div>
             </div>
           </div>
           <p className="muted small" style={{ marginBottom: 0 }}>
-            Click the row in History below for the full 2016 vs 2017 breakdown.
+            Click the row in History below for the full before/after breakdown.
           </p>
         </div>
       )}

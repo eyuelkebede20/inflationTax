@@ -1,9 +1,11 @@
 # InflaTax — Inflation Tax Tracker
 
-A small web app that takes a **2017 EC** taxable amount, derives the prior year
-(**2016 EC**) via inflation, and computes **profit tax** plus a **schedule
-("curfew") rate** for both years. Signed-in users sync history & settings to
-Supabase; anonymous users get full functionality with local history.
+A small web app that shows how **inflation raises next year's tax**. For each
+business you enter its **2017 total tax paid** and **2017 sales**; InflaTax
+inflates the sales, re-applies the sales-tax bracket table (which can bump sales
+into a higher bracket), and computes the extra tax inflation causes plus the new
+**2018 total tax**. Signed-in users sync history & settings to Supabase;
+anonymous users get full functionality with local history.
 
 Built with **React + Vite + TypeScript**, **React Router**, and **Supabase**.
 
@@ -48,17 +50,34 @@ routing rewrite).
 
 ## The math
 
-All pure functions live in [`src/lib/calc.ts`](src/lib/calc.ts):
+All pure functions live in [`src/lib/calc.ts`](src/lib/calc.ts). Inputs per
+entry: `tax2017Paid`, `salesBefore` (2017 sales), `inflationRate` (default
+`0.152`).
 
-- `taxable2016 = taxable2017 / (1 + inflationRate)` (default rate `0.152`).
-- `profitTax(g)` — Schedule-C bracket formula, applied per year.
-- `scheduleRate(amount)` — curfew table (2% … 9%), chosen by each year's amount.
-- Curfew result = `taxable × scheduleRate`, per year.
+```
+taxBefore  = salesBefore * bracketRate(salesBefore)
+salesWith  = salesBefore * (1 + inflationRate)
+taxWith    = salesWith   * bracketRate(salesWith)
+difference = taxWith - taxBefore           // "Garaagaruma"
+tax2018    = tax2017Paid + difference      // "Taaksii Bara 2018"
+```
 
-### Assumptions (see CLAUDE.md §9)
+`bracketRate(amount)` — sales-tax table chosen by the amount:
 
-- **A.** Inflation deflates 2017 → 2016 by dividing by `(1 + rate)`.
-- **B.** Amounts ≥ 2,000,000 default to the top 9% schedule rate.
+| Amount (Birr)                | Rate |
+| ---------------------------- | ---- |
+| 0 – 100,000                  | 2%   |
+| 100,001 – 500,000            | 3%   |
+| 500,001 – 1,000,000          | 5%   |
+| 1,000,001 – 1,500,000        | 7%   |
+| 1,500,001 +                  | 9%   |
+
+Inflation can push `salesWith` into a higher bracket than `salesBefore`, which
+is what raises the tax. Verified against the source spreadsheet (e.g. sales
+450,000 → tax 13,500 at 3%; inflated to 518,400 → tax 25,920 at 5%; difference
+12,420; with 2017 tax 50,370 → 2018 tax 62,790).
+
+> Amounts ≥ 2,000,000 default to the top 9% rate (table doesn't define higher).
 
 ## Scripts
 

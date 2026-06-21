@@ -6,7 +6,7 @@ import { DEFAULT_INFLATION_RATE } from "../config";
 export interface HistoryItem extends CalcResult {
   id: string;
   createdAt: string;
-  label: string | null;
+  businessType: string | null;
 }
 
 const HISTORY_KEY = "calc_history";
@@ -36,32 +36,51 @@ function localId(): string {
 interface DbRow {
   id: string;
   created_at: string;
-  label: string | null;
-  taxable_2017: number;
+  business_type: string | null;
+  tax_2017_paid: number;
+  sales_before: number;
   inflation_rate: number;
-  taxable_2016: number;
-  profit_tax_2016: number;
-  profit_tax_2017: number;
-  schedule_rate_2016: number;
-  schedule_rate_2017: number;
-  curfew_2016: number;
-  curfew_2017: number;
+  rate_before: number;
+  tax_before: number;
+  sales_with: number;
+  rate_with: number;
+  tax_with: number;
+  difference: number;
+  tax_2018: number;
 }
 
 function rowToItem(r: DbRow): HistoryItem {
   return {
     id: r.id,
     createdAt: r.created_at,
-    label: r.label,
-    taxable2017: Number(r.taxable_2017),
+    businessType: r.business_type,
+    tax2017Paid: Number(r.tax_2017_paid),
+    salesBefore: Number(r.sales_before),
     inflationRate: Number(r.inflation_rate),
-    taxable2016: Number(r.taxable_2016),
-    profitTax2016: Number(r.profit_tax_2016),
-    profitTax2017: Number(r.profit_tax_2017),
-    rate2016: Number(r.schedule_rate_2016),
-    rate2017: Number(r.schedule_rate_2017),
-    curfew2016: Number(r.curfew_2016),
-    curfew2017: Number(r.curfew_2017),
+    rateBefore: Number(r.rate_before),
+    taxBefore: Number(r.tax_before),
+    salesWith: Number(r.sales_with),
+    rateWith: Number(r.rate_with),
+    taxWith: Number(r.tax_with),
+    difference: Number(r.difference),
+    tax2018: Number(r.tax_2018),
+  };
+}
+
+function itemToInsert(userId: string, result: CalcResult, businessType: string | null) {
+  return {
+    user_id: userId,
+    business_type: businessType,
+    tax_2017_paid: result.tax2017Paid,
+    sales_before: result.salesBefore,
+    inflation_rate: result.inflationRate,
+    rate_before: result.rateBefore,
+    tax_before: result.taxBefore,
+    sales_with: result.salesWith,
+    rate_with: result.rateWith,
+    tax_with: result.taxWith,
+    difference: result.difference,
+    tax_2018: result.tax2018,
   };
 }
 
@@ -98,24 +117,12 @@ export async function getCalculation(
 export async function saveCalculation(
   userId: string | null,
   result: CalcResult,
-  label: string | null
+  businessType: string | null
 ): Promise<HistoryItem> {
   if (userId && supabase) {
     const { data, error } = await supabase
       .from("calculations")
-      .insert({
-        user_id: userId,
-        label,
-        taxable_2017: result.taxable2017,
-        inflation_rate: result.inflationRate,
-        taxable_2016: result.taxable2016,
-        profit_tax_2016: result.profitTax2016,
-        profit_tax_2017: result.profitTax2017,
-        schedule_rate_2016: result.rate2016,
-        schedule_rate_2017: result.rate2017,
-        curfew_2016: result.curfew2016,
-        curfew_2017: result.curfew2017,
-      })
+      .insert(itemToInsert(userId, result, businessType))
       .select("*")
       .single();
     if (error) throw error;
@@ -126,7 +133,7 @@ export async function saveCalculation(
     ...result,
     id: localId(),
     createdAt: new Date().toISOString(),
-    label,
+    businessType,
   };
   const items = [item, ...readLocalHistory()];
   writeLocalHistory(items);
@@ -195,18 +202,8 @@ export async function importLocalHistory(userId: string): Promise<number> {
   if (local.length === 0) return 0;
 
   const rows = local.map((h) => ({
-    user_id: userId,
-    label: h.label,
+    ...itemToInsert(userId, h, h.businessType),
     created_at: h.createdAt,
-    taxable_2017: h.taxable2017,
-    inflation_rate: h.inflationRate,
-    taxable_2016: h.taxable2016,
-    profit_tax_2016: h.profitTax2016,
-    profit_tax_2017: h.profitTax2017,
-    schedule_rate_2016: h.rate2016,
-    schedule_rate_2017: h.rate2017,
-    curfew_2016: h.curfew2016,
-    curfew_2017: h.curfew2017,
   }));
 
   const { error } = await supabase.from("calculations").insert(rows);

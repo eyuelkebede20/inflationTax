@@ -58,7 +58,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="footer">
-        InflaTax · inflation-adjusted profit tax &amp; schedule-rate calculator
+        InflaTax · how inflation re-brackets sales and raises next year's tax
       </footer>
     </div>
   );
