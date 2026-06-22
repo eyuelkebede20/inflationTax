@@ -50,6 +50,35 @@ user / admin / superadmin dashboards in nav (auth scaffolded but **commented** f
 - [x] App.tsx routes + React.lazy code-splitting
 - [x] build (tsc + vite) green — dashboards/auth/analysis are separate chunks
 
+## Round 2 — language + table to match the image
+- [x] Dropped Amharic — app is now **English + Oromo only** (removed `am` dict,
+      LANGS entry, `Lang` member). Default language is now Oromo (`om`).
+- [x] Table column headers now use the **exact bilingual labels from the image**:
+      EN ("Tax Payer Name", "Tax paid on 2017", "Sales before inflation", …) and
+      OM ("Maqaa kafalaa Gibiraa", "Taaksii waliigala bara 2017 kafale",
+      "Gurgurtaa qaala'iinsa gabaa duraa", …). Fixed the OM columns that were
+      still showing English.
+- [x] Two-tier header: the 6 inflation columns sit under a **"Taaksii 2018"**
+      group, matching the spreadsheet.
+- [x] Printed cards already render in the **currently selected language** (labels
+      are resolved via `t()` at print time) — verified now that OM cards show the
+      OM column names. Print subtitle = official title `Taaksii Kafalaa Gibiraa
+      Sadarkaa "B" 2018`.
+
+## Round 3 — hierarchy, user management, void approval, side dashboard
+- [x] Hierarchy **superadmin → admin (branch manager) → user (employee)**.
+      Identity-based dev switcher (pick superadmin / any admin / any employee).
+- [x] **User management:** superadmin creates/removes admins; admins create/remove
+      employees + reset their passwords (local preview accounts, plaintext stub).
+- [x] **Void approval flow:** employee *requests* a void on a locked row → admin
+      *approves/rejects* → superadmin sees all overall. Admins void directly.
+- [x] Admin dashboard shows **per-employee branch summary** + approvals + team.
+- [x] Superadmin **side dashboard** (Overview / Admins / Rates / Voids).
+- [x] Entries carry `ownerId`/`ownerName`; scope = user→own, admin→branch, super→all.
+- [x] Schema updated: `owner_name`, `void_requests`, `request_void`/`decide_void`
+      RPCs, new RLS. **claude.md rewritten** as the living spec + changelog (v1→v3).
+- [x] build green.
+
 ## Remaining / follow-ups (not done this pass)
 - [ ] **Activate auth.** Flip `AUTH_ENABLED` in config.ts, wire `profiles` to a
       real `useRole()` (read signed-in user's role/branch), remove the dev switcher.

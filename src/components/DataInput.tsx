@@ -13,7 +13,7 @@ interface Props {
 
 export default function DataInput({ config, onCalculated, saving }: Props) {
   const { t } = useT();
-  const { branchId } = useRole();
+  const { identity } = useRole();
   const [name, setName] = useState("");
   const [tin, setTin] = useState("");
   const [businessType, setBusinessType] = useState("");
@@ -48,7 +48,9 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
       name: name.trim(),
       tin: tin.trim(),
       businessType: businessType.trim() || null,
-      branchId,
+      branchId: identity.branchId,
+      ownerId: identity.id,
+      ownerName: identity.name,
     });
     setName("");
     setTin("");

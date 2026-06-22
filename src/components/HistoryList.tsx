@@ -52,7 +52,9 @@ export default function HistoryList(props: Props) {
   }
 
   function voidRow(item: HistoryItem) {
-    const reason = window.prompt(t("common.void_prompt"));
+    const reason = window.prompt(
+      t(canVoid ? "common.void_prompt" : "common.request_void_prompt")
+    );
     if (reason && reason.trim()) props.onVoid(item, reason.trim());
     else if (reason !== null) window.alert(t("common.void_need_reason"));
   }
@@ -124,19 +126,22 @@ export default function HistoryList(props: Props) {
             <table className="history-table">
               <thead>
                 <tr>
-                  <th className="col-action no-print" aria-hidden="true"></th>
-                  <th>{t("table.tl")}</th>
-                  <th>{t("table.name")}</th>
-                  <th>{t("table.tin")}</th>
-                  <th>{t("table.business")}</th>
-                  <th className="num">{t("table.lastyear_tax")}</th>
+                  <th className="col-action no-print" aria-hidden="true" rowSpan={2}></th>
+                  <th rowSpan={2}>{t("table.tl")}</th>
+                  <th rowSpan={2}>{t("table.name")}</th>
+                  <th rowSpan={2}>{t("table.tin")}</th>
+                  <th rowSpan={2}>{t("table.business")}</th>
+                  <th className="num" rowSpan={2}>{t("table.lastyear_tax")}</th>
+                  <th className="num group-head" colSpan={6}>{t("table.group_2018")}</th>
+                  <th className="col-action no-print" aria-hidden="true" rowSpan={2}></th>
+                </tr>
+                <tr>
                   <th className="num">{t("table.sales_before")}</th>
                   <th className="num">{t("table.tax_before")}</th>
                   <th className="num">{t("table.sales_with")}</th>
                   <th className="num">{t("table.tax_with")}</th>
                   <th className="num">{t("table.garaagaruma")}</th>
                   <th className="num">{t("table.taaksii2018")}</th>
-                  <th className="col-action no-print" aria-hidden="true"></th>
                 </tr>
               </thead>
               <tbody>
@@ -147,8 +152,12 @@ export default function HistoryList(props: Props) {
                     onClick={() => navigate(`/analysis/${item.id}`)}
                   >
                     <td className="col-action no-print">
-                      {item.locked ? (
-                        canVoid && !item.voided ? (
+                      {item.voided ? (
+                        <span className="lock-ico" title={t("common.voided")}>
+                          ⦸
+                        </span>
+                      ) : item.locked ? (
+                        canVoid ? (
                           <button
                             className="row-del"
                             title={t("common.void")}
@@ -161,9 +170,17 @@ export default function HistoryList(props: Props) {
                             ⦸
                           </button>
                         ) : (
-                          <span className="lock-ico" title={t("common.locked")}>
-                            🔒
-                          </span>
+                          <button
+                            className="row-share"
+                            title={t("common.request_void")}
+                            aria-label={t("common.request_void")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              voidRow(item);
+                            }}
+                          >
+                            📝
+                          </button>
                         )
                       ) : (
                         <button

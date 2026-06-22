@@ -6,69 +6,103 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { getAccount, getAccounts, SUPERADMIN_ID, type Account } from "../lib/storage";
 
 // ---------------------------------------------------------------------------
-// Roles & branches (idea #8).
+// Roles & hierarchy (idea #8).
+//   superadmin -> admins (branch managers) -> users (employees)
 //
-// Auth is OFF for now (config.AUTH_ENABLED === false), so the "current role"
-// and "current branch" are driven by a dev switcher persisted in localStorage.
-// This lets us walk through every dashboard while we design them. When real
-// auth lands, replace `useRole()` with a hook that reads the signed-in user's
-// row from the `profiles` table — the rest of the app keeps working unchanged.
+// Auth is OFF (config.AUTH_ENABLED === false), so "who am I" is driven by a dev
+// identity switcher persisted in localStorage. Pick the superadmin, any admin,
+// or any employee to preview their view. When real auth lands, replace
+// `useRole()` with a hook that reads the signed-in user's profile row.
 // ---------------------------------------------------------------------------
 
 export type Role = "user" | "admin" | "superadmin";
-
-export const ROLES: { value: Role; label: string }[] = [
-  { value: "user", label: "User" },
-  { value: "admin", label: "Admin" },
-  { value: "superadmin", label: "Superadmin" },
-];
 
 export interface Branch {
   id: string;
   name: string;
 }
 
-interface RoleValue {
+export interface Identity {
+  id: string; // SUPERADMIN_ID or an account id
   role: Role;
-  setRole: (r: Role) => void;
   branchId: string | null;
-  setBranchId: (id: string | null) => void;
+  username: string;
+  name: string;
+}
+
+const SUPER: Identity = {
+  id: SUPERADMIN_ID,
+  role: "superadmin",
+  branchId: null,
+  username: "superadmin",
+  name: "Super Admin",
+};
+
+function toIdentity(acc: Account): Identity {
+  return {
+    id: acc.id,
+    role: acc.role,
+    branchId: acc.branchId,
+    username: acc.username,
+    name: acc.fullName || acc.username,
+  };
+}
+
+function resolve(id: string): Identity {
+  if (id === SUPERADMIN_ID) return SUPER;
+  const acc = getAccount(id);
+  return acc ? toIdentity(acc) : SUPER;
+}
+
+interface RoleValue {
+  identity: Identity;
+  setIdentityId: (id: string) => void;
+  accounts: Account[];
+  reloadAccounts: () => void;
+  // convenience (back-compat)
+  role: Role;
+  branchId: string | null;
 }
 
 const RoleContext = createContext<RoleValue>({
-  role: "user",
-  setRole: () => {},
+  identity: SUPER,
+  setIdentityId: () => {},
+  accounts: [],
+  reloadAccounts: () => {},
+  role: "superadmin",
   branchId: null,
-  setBranchId: () => {},
 });
 
-const ROLE_KEY = "dev_role";
-const BRANCH_KEY = "dev_branch";
+const IDENTITY_KEY = "dev_identity";
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<Role>(
-    () => (localStorage.getItem(ROLE_KEY) as Role) || "user"
+  const [identityId, setIdState] = useState<string>(
+    () => localStorage.getItem(IDENTITY_KEY) || SUPERADMIN_ID
   );
-  const [branchId, setBranchIdState] = useState<string | null>(
-    () => localStorage.getItem(BRANCH_KEY) || null
-  );
+  const [accounts, setAccounts] = useState<Account[]>(() => getAccounts());
 
-  const setRole = useCallback((r: Role) => {
-    setRoleState(r);
-    localStorage.setItem(ROLE_KEY, r);
+  const setIdentityId = useCallback((id: string) => {
+    setIdState(id);
+    localStorage.setItem(IDENTITY_KEY, id);
   }, []);
 
-  const setBranchId = useCallback((id: string | null) => {
-    setBranchIdState(id);
-    if (id) localStorage.setItem(BRANCH_KEY, id);
-    else localStorage.removeItem(BRANCH_KEY);
-  }, []);
+  const reloadAccounts = useCallback(() => setAccounts(getAccounts()), []);
 
-  const value = useMemo(
-    () => ({ role, setRole, branchId, setBranchId }),
-    [role, setRole, branchId, setBranchId]
+  const identity = useMemo(() => resolve(identityId), [identityId, accounts]);
+
+  const value = useMemo<RoleValue>(
+    () => ({
+      identity,
+      setIdentityId,
+      accounts,
+      reloadAccounts,
+      role: identity.role,
+      branchId: identity.branchId,
+    }),
+    [identity, setIdentityId, accounts, reloadAccounts]
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

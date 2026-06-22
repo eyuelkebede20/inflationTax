@@ -1,27 +1,28 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
-import { useRole, ROLES, type Role } from "../hooks/RoleContext";
-import { getBranches } from "../lib/storage";
+import { useRole } from "../hooks/RoleContext";
+import { SUPERADMIN_ID } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { AUTH_ENABLED } from "../config";
 import { LANGS, useT } from "../lib/i18n";
 
 export default function Nav() {
   const { user, enabled } = useAuth();
-  const { role, setRole, branchId, setBranchId } = useRole();
+  const { identity, setIdentityId, accounts, role } = useRole();
   const { lang, setLang, t } = useT();
   const navigate = useNavigate();
-  const branches = getBranches();
 
   async function signOut() {
     await supabase?.auth.signOut();
     navigate("/");
   }
 
-  // Dashboards visible per role. Auth is off, so the dev switcher decides which
-  // role you're previewing; superadmin sees everything.
+  // Dashboards visible per role. Superadmin sees everything.
   const showAdmin = role === "admin" || role === "superadmin";
   const showSuper = role === "superadmin";
+
+  const admins = accounts.filter((a) => a.role === "admin");
+  const users = accounts.filter((a) => a.role === "user");
 
   return (
     <nav className="nav no-print">
@@ -50,30 +51,34 @@ export default function Nav() {
         </div>
 
         <div className="nav-actions">
-          {/* Dev role/branch switcher — remove once real auth is enabled. */}
+          {/* Dev identity switcher — remove once real auth is enabled. */}
           {!AUTH_ENABLED && (
-            <div className="dev-switch" title={t("nav.dev_role")}>
-              <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              {role !== "superadmin" && branches.length > 0 && (
-                <select
-                  value={branchId ?? ""}
-                  onChange={(e) => setBranchId(e.target.value || null)}
-                >
-                  <option value="">{t("nav.all_branches")}</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
+            <select
+              className="dev-switch-select"
+              title={t("nav.dev_role")}
+              value={identity.id}
+              onChange={(e) => setIdentityId(e.target.value)}
+            >
+              <option value={SUPERADMIN_ID}>★ {t("nav.superadmin")}</option>
+              {admins.length > 0 && (
+                <optgroup label={t("nav.admin")}>
+                  {admins.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.branchName} · {a.username}
                     </option>
                   ))}
-                </select>
+                </optgroup>
               )}
-            </div>
+              {users.length > 0 && (
+                <optgroup label={t("nav.dashboard")}>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.branchName} · {u.username}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
           )}
 
           <div className="lang-switch" role="group" aria-label={t("profile.language")}>

@@ -867,11 +867,7 @@ input:focus {
   background: var(--panel-2);
   color: var(--brand);
 }
-.dev-switch {
-  display: inline-flex;
-  gap: 6px;
-}
-.dev-switch select {
+.dev-switch-select {
   padding: 7px 10px;
   background: #0c1426;
   border: 1px dashed var(--border);
@@ -879,6 +875,55 @@ input:focus {
   color: var(--text);
   cursor: pointer;
   font-size: 0.82rem;
+  max-width: 200px;
+}
+
+/* ---- Side dashboard (superadmin) ---- */
+.dash {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.dash-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 84px;
+}
+.dash-nav button {
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.12s, color 0.12s;
+}
+.dash-nav button:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+.dash-nav button.active {
+  background: var(--panel-2);
+  color: var(--brand);
+  border-color: var(--border);
+}
+.dash-main {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .dash {
+    grid-template-columns: 1fr;
+  }
+  .dash-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: static;
+  }
 }
 
 /* ---- Segmented control (Tax / Rental) ---- */
@@ -901,6 +946,14 @@ input:focus {
 .seg-btn.active {
   background: var(--brand);
   color: #042f2b;
+}
+
+/* ---- Grouped table header ("Taaksii 2018") ---- */
+.history-table th.group-head {
+  text-align: center !important;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* ---- Pagination ---- */

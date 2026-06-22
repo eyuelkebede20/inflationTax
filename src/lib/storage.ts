@@ -5,9 +5,14 @@ import type { Branch, Role } from "../hooks/RoleContext";
 
 // ---------------------------------------------------------------------------
 // Persistence. Calculations + global settings round-trip through Supabase when
-// configured, else localStorage. Branches/admins are local-only for now (the
-// dev preview layer) until auth + the profiles table are activated — see
-// tasks.md. Everything is paginated so 100+ users stay fast.
+// configured, else localStorage. The accounts/hierarchy layer is local-only
+// PREVIEW for now (passwords are plaintext stubs) until auth + the profiles
+// table are activated — see claude.md / tasks.md. Everything is paginated so
+// 100+ users stay fast.
+//
+// Hierarchy: superadmin -> admins (each admin owns one branch / is its manager)
+//            -> users (employees of that branch). Entries are owned by the user
+//            who created them and carry their branch.
 // ---------------------------------------------------------------------------
 
 export interface AppSettings {
@@ -25,6 +30,8 @@ export interface EntryMeta {
   tin: string | null;
   businessType: string | null;
   branchId: string | null;
+  ownerId: string | null; // account (employee) that created the entry
+  ownerName: string | null;
 }
 
 // A saved calculation, app-side shape (camelCase).
@@ -35,14 +42,17 @@ export interface HistoryItem extends CalcResult {
   tin: string | null;
   businessType: string | null;
   branchId: string | null;
-  locked: boolean; // fixed once printed — user can no longer edit/delete
+  ownerId: string | null;
+  ownerName: string | null;
+  locked: boolean; // fixed once printed — can no longer be edited/deleted
   printedAt: string | null;
-  voided: boolean; // admin removed a locked row (kept for the void trail)
+  voided: boolean; // removed via an approved void (kept for the trail)
   voidReason: string | null;
 }
 
 export interface HistoryScope {
-  userId: string | null;
+  userId: string | null; // Supabase auth id (live mode)
+  accountId: string | null; // local preview account id
   role: Role;
   branchId: string | null;
   page?: number;
@@ -57,19 +67,25 @@ export interface HistoryPage {
 
 const HISTORY_KEY = "calc_history";
 const SETTINGS_KEY = "app_settings";
-const BRANCHES_KEY = "branches";
-const VOID_KEY = "void_log";
+const ACCOUNTS_KEY = "accounts";
+const VOID_KEY = "void_requests";
 const DEFAULT_PAGE_SIZE = 20;
+
+export const SUPERADMIN_ID = "superadmin";
 
 // ---- localStorage helpers --------------------------------------------------
 
-function readLocalHistory(): HistoryItem[] {
+function readJson<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? (JSON.parse(raw) as HistoryItem[]) : [];
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
+}
+
+function readLocalHistory(): HistoryItem[] {
+  return readJson<HistoryItem[]>(HISTORY_KEY, []);
 }
 
 function writeLocalHistory(items: HistoryItem[]): void {
@@ -80,14 +96,16 @@ function localId(prefix = "local"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// Apply role/branch visibility + search to a flat list (local mode + reuse).
+// Apply role/branch/owner visibility + search to a flat list.
 function applyScope(all: HistoryItem[], scope: HistoryScope): HistoryItem[] {
   const q = scope.search?.trim().toLowerCase();
   return all.filter((it) => {
     if (scope.role === "admin" && scope.branchId && it.branchId !== scope.branchId)
       return false;
+    if (scope.role === "user" && scope.accountId && it.ownerId !== scope.accountId)
+      return false;
     if (!q) return true;
-    return [it.name, it.tin, it.businessType]
+    return [it.name, it.tin, it.businessType, it.ownerName]
       .filter(Boolean)
       .some((v) => v!.toLowerCase().includes(q));
   });
@@ -102,6 +120,7 @@ interface DbRow {
   tin: string | null;
   business_type: string | null;
   branch_id: string | null;
+  owner_name: string | null;
   kind: string;
   turnover: number;
   last_year_tax: number;
@@ -129,6 +148,8 @@ function rowToItem(r: DbRow): HistoryItem {
     tin: r.tin,
     businessType: r.business_type,
     branchId: r.branch_id,
+    ownerId: null,
+    ownerName: r.owner_name,
     kind: r.kind === "rental" ? "rental" : "tax",
     turnover: Number(r.turnover),
     lastYearTax: Number(r.last_year_tax),
@@ -156,6 +177,7 @@ function itemToInsert(userId: string, r: CalcResult, m: EntryMeta) {
     tin: m.tin,
     business_type: m.businessType,
     branch_id: m.branchId,
+    owner_name: m.ownerName,
     kind: r.kind,
     turnover: r.turnover,
     last_year_tax: r.lastYearTax,
@@ -184,7 +206,6 @@ export async function getHistory(scope: HistoryScope): Promise<HistoryPage> {
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1);
-    // Admins see their branch; users see their own rows (enforced by RLS too).
     if (scope.role === "admin" && scope.branchId)
       query = query.eq("branch_id", scope.branchId);
     if (scope.search)
@@ -289,70 +310,6 @@ export async function deleteCalculation(
   );
 }
 
-export interface VoidEntry {
-  id: string;
-  calcId: string;
-  name: string | null;
-  reason: string;
-  branchId: string | null;
-  at: string;
-  acknowledged: boolean;
-}
-
-/** Admin voids a locked row; the trail is kept and surfaced to superadmins. */
-export async function voidCalculation(
-  userId: string | null,
-  item: HistoryItem,
-  reason: string
-): Promise<void> {
-  const at = new Date().toISOString();
-  if (userId && supabase) {
-    const { error } = await supabase.rpc("void_calculation", {
-      p_calc_id: item.id,
-      p_reason: reason,
-    });
-    if (error) throw error;
-    return;
-  }
-  writeLocalHistory(
-    readLocalHistory().map((h) =>
-      h.id === item.id ? { ...h, voided: true, voidReason: reason } : h
-    )
-  );
-  const log = readVoidLog();
-  log.unshift({
-    id: localId("void"),
-    calcId: item.id,
-    name: item.name,
-    reason,
-    branchId: item.branchId,
-    at,
-    acknowledged: false,
-  });
-  localStorage.setItem(VOID_KEY, JSON.stringify(log));
-}
-
-function readVoidLog(): VoidEntry[] {
-  try {
-    return JSON.parse(localStorage.getItem(VOID_KEY) || "[]") as VoidEntry[];
-  } catch {
-    return [];
-  }
-}
-
-export async function getVoidLog(): Promise<VoidEntry[]> {
-  return readVoidLog();
-}
-
-export async function acknowledgeVoid(id: string): Promise<void> {
-  localStorage.setItem(
-    VOID_KEY,
-    JSON.stringify(
-      readVoidLog().map((v) => (v.id === id ? { ...v, acknowledged: true } : v))
-    )
-  );
-}
-
 export async function resetHistory(scope: HistoryScope): Promise<void> {
   if (scope.userId && supabase) {
     const { error } = await supabase
@@ -363,8 +320,227 @@ export async function resetHistory(scope: HistoryScope): Promise<void> {
     if (error) throw error;
     return;
   }
-  // Local: clear only unlocked rows so printed records survive.
   writeLocalHistory(readLocalHistory().filter((h) => h.locked));
+}
+
+// ---- Accounts / hierarchy (local preview) ----------------------------------
+
+export interface Account {
+  id: string;
+  username: string;
+  password: string; // PREVIEW ONLY: plaintext stub. Real auth = Supabase.
+  role: "admin" | "user";
+  branchId: string; // admin: own id; user: inherits manager's branch
+  branchName: string;
+  managerId: string | null; // user -> admin id; admin -> null
+  fullName: string | null;
+  createdAt: string;
+}
+
+function writeAccounts(list: Account[]): void {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+}
+
+export function getAccounts(): Account[] {
+  return readJson<Account[]>(ACCOUNTS_KEY, []);
+}
+
+export function getAdmins(): Account[] {
+  return getAccounts().filter((a) => a.role === "admin");
+}
+
+export function getUsersForManager(managerId: string): Account[] {
+  return getAccounts().filter((a) => a.role === "user" && a.managerId === managerId);
+}
+
+export function usernameTaken(username: string): boolean {
+  const u = username.trim().toLowerCase();
+  return getAccounts().some((a) => a.username.toLowerCase() === u);
+}
+
+/** Superadmin creates an admin; the admin's id doubles as their branch id. */
+export function createAdmin(input: {
+  username: string;
+  password: string;
+  branchName: string;
+  fullName?: string;
+}): Account {
+  const id = localId("admin");
+  const admin: Account = {
+    id,
+    username: input.username.trim(),
+    password: input.password,
+    role: "admin",
+    branchId: id,
+    branchName: input.branchName.trim() || input.username.trim(),
+    managerId: null,
+    fullName: input.fullName?.trim() || null,
+    createdAt: new Date().toISOString(),
+  };
+  writeAccounts([...getAccounts(), admin]);
+  return admin;
+}
+
+/** An admin creates an employee under their branch. */
+export function createUser(
+  manager: Account,
+  input: { username: string; password: string; fullName?: string }
+): Account {
+  const user: Account = {
+    id: localId("user"),
+    username: input.username.trim(),
+    password: input.password,
+    role: "user",
+    branchId: manager.branchId,
+    branchName: manager.branchName,
+    managerId: manager.id,
+    fullName: input.fullName?.trim() || null,
+    createdAt: new Date().toISOString(),
+  };
+  writeAccounts([...getAccounts(), user]);
+  return user;
+}
+
+/** Remove an account; removing an admin cascades to their employees. */
+export function removeAccount(id: string): void {
+  writeAccounts(getAccounts().filter((a) => a.id !== id && a.managerId !== id));
+}
+
+export function setPassword(id: string, password: string): void {
+  writeAccounts(
+    getAccounts().map((a) => (a.id === id ? { ...a, password } : a))
+  );
+}
+
+export function getAccount(id: string | null): Account | null {
+  if (!id) return null;
+  return getAccounts().find((a) => a.id === id) ?? null;
+}
+
+// Branches are derived from admins (branch = admin).
+export function getBranches(): Branch[] {
+  return getAdmins().map((a) => ({ id: a.branchId, name: a.branchName }));
+}
+
+// ---- Void requests + approval flow -----------------------------------------
+
+export type VoidStatus = "pending" | "approved" | "rejected";
+
+export interface VoidRequest {
+  id: string;
+  calcId: string;
+  calcName: string | null;
+  branchId: string | null;
+  requestedById: string | null;
+  requestedByName: string | null;
+  reason: string;
+  status: VoidStatus;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+}
+
+function readVoids(): VoidRequest[] {
+  return readJson<VoidRequest[]>(VOID_KEY, []);
+}
+
+function writeVoids(list: VoidRequest[]): void {
+  localStorage.setItem(VOID_KEY, JSON.stringify(list));
+}
+
+function setVoided(calcId: string, reason: string): void {
+  writeLocalHistory(
+    readLocalHistory().map((h) =>
+      h.id === calcId ? { ...h, voided: true, voidReason: reason } : h
+    )
+  );
+}
+
+/** Employee asks to void a locked entry — pending until an admin approves. */
+export function requestVoid(
+  item: HistoryItem,
+  requester: { id: string; name: string },
+  reason: string
+): VoidRequest {
+  const req: VoidRequest = {
+    id: localId("void"),
+    calcId: item.id,
+    calcName: item.name,
+    branchId: item.branchId,
+    requestedById: requester.id,
+    requestedByName: requester.name,
+    reason,
+    status: "pending",
+    decidedByName: null,
+    decidedAt: null,
+    createdAt: new Date().toISOString(),
+  };
+  writeVoids([req, ...readVoids()]);
+  return req;
+}
+
+/** Admin voids directly (counts as a self-approved request). */
+export function voidDirect(
+  item: HistoryItem,
+  decider: { name: string },
+  reason: string
+): void {
+  const req: VoidRequest = {
+    id: localId("void"),
+    calcId: item.id,
+    calcName: item.name,
+    branchId: item.branchId,
+    requestedById: null,
+    requestedByName: decider.name,
+    reason,
+    status: "approved",
+    decidedByName: decider.name,
+    decidedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  writeVoids([req, ...readVoids()]);
+  setVoided(item.id, reason);
+}
+
+export function approveVoid(reqId: string, decider: { name: string }): void {
+  const at = new Date().toISOString();
+  let target: VoidRequest | undefined;
+  writeVoids(
+    readVoids().map((v) => {
+      if (v.id !== reqId) return v;
+      target = v;
+      return { ...v, status: "approved", decidedByName: decider.name, decidedAt: at };
+    })
+  );
+  if (target) setVoided(target.calcId, target.reason);
+}
+
+export function rejectVoid(reqId: string, decider: { name: string }): void {
+  const at = new Date().toISOString();
+  writeVoids(
+    readVoids().map((v) =>
+      v.id === reqId
+        ? { ...v, status: "rejected", decidedByName: decider.name, decidedAt: at }
+        : v
+    )
+  );
+}
+
+export interface VoidScope {
+  role: Role;
+  branchId: string | null;
+}
+
+/** Admin sees their branch's requests; superadmin sees all. Pending first. */
+export function getVoidRequests(scope: VoidScope): VoidRequest[] {
+  const all = readVoids().filter((v) =>
+    scope.role === "superadmin" ? true : v.branchId === scope.branchId
+  );
+  const rank = (s: VoidStatus) => (s === "pending" ? 0 : 1);
+  return all.sort(
+    (a, b) =>
+      rank(a.status) - rank(b.status) || b.createdAt.localeCompare(a.createdAt)
+  );
 }
 
 // ---- Settings API (global, superadmin-managed) -----------------------------
@@ -393,9 +569,7 @@ export async function getAppSettings(): Promise<AppSettings> {
             ? p.inflationRate
             : DEFAULT_INFLATION_RATE,
         rentalShare:
-          typeof p.rentalShare === "number"
-            ? p.rentalShare
-            : DEFAULT_RENTAL_SHARE,
+          typeof p.rentalShare === "number" ? p.rentalShare : DEFAULT_RENTAL_SHARE,
       };
     } catch {
       /* ignore */
@@ -417,38 +591,12 @@ export async function setAppSettings(s: AppSettings): Promise<void> {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
-// ---- Branches (dev/local preview layer) ------------------------------------
-
-export function getBranches(): Branch[] {
-  try {
-    return JSON.parse(localStorage.getItem(BRANCHES_KEY) || "[]") as Branch[];
-  } catch {
-    return [];
-  }
-}
-
-export function createBranch(name: string): Branch {
-  const branch: Branch = { id: localId("branch"), name };
-  localStorage.setItem(
-    BRANCHES_KEY,
-    JSON.stringify([...getBranches(), branch])
-  );
-  return branch;
-}
-
-export function deleteBranch(id: string): void {
-  localStorage.setItem(
-    BRANCHES_KEY,
-    JSON.stringify(getBranches().filter((b) => b.id !== id))
-  );
-}
-
 // ---- Aggregate stats (dashboards) ------------------------------------------
 // Local/preview implementation. With Supabase live, back this with a SQL view
 // or RPC that GROUP BYs branch_id so it stays O(branches), not O(rows).
 
-export interface BranchStat {
-  branchId: string | null;
+export interface StatRow {
+  id: string | null;
   name: string;
   count: number;
   lastYearTax: number;
@@ -456,29 +604,41 @@ export interface BranchStat {
   taaksii2018: number;
 }
 
-export async function getBranchStats(): Promise<BranchStat[]> {
+function aggregate(
+  items: HistoryItem[],
+  keyOf: (it: HistoryItem) => string | null,
+  nameOf: (key: string | null) => string
+): StatRow[] {
+  const by = new Map<string | null, StatRow>();
+  for (const it of items) {
+    if (it.voided) continue;
+    const key = keyOf(it);
+    const row =
+      by.get(key) ??
+      { id: key, name: nameOf(key), count: 0, lastYearTax: 0, garaagaruma: 0, taaksii2018: 0 };
+    row.count += 1;
+    row.lastYearTax += it.lastYearTax;
+    row.garaagaruma += it.garaagaruma;
+    row.taaksii2018 += it.taaksiiBara2018;
+    by.set(key, row);
+  }
+  return [...by.values()].sort((a, b) => b.taaksii2018 - a.taaksii2018);
+}
+
+/** Superadmin overview: one row per branch. */
+export async function getBranchStats(): Promise<StatRow[]> {
   const branches = getBranches();
   const nameOf = (id: string | null) =>
-    branches.find((b) => b.id === id)?.name ?? (id ? id : "—");
-  const byBranch = new Map<string | null, BranchStat>();
-  for (const it of readLocalHistory()) {
-    if (it.voided) continue;
-    const key = it.branchId;
-    const stat =
-      byBranch.get(key) ??
-      {
-        branchId: key,
-        name: nameOf(key),
-        count: 0,
-        lastYearTax: 0,
-        garaagaruma: 0,
-        taaksii2018: 0,
-      };
-    stat.count += 1;
-    stat.lastYearTax += it.lastYearTax;
-    stat.garaagaruma += it.garaagaruma;
-    stat.taaksii2018 += it.taaksiiBara2018;
-    byBranch.set(key, stat);
-  }
-  return [...byBranch.values()].sort((a, b) => b.taaksii2018 - a.taaksii2018);
+    branches.find((b) => b.id === id)?.name ?? (id || "—");
+  return aggregate(readLocalHistory(), (it) => it.branchId, nameOf);
+}
+
+/** Admin view: one row per employee within a branch. */
+export async function getEmployeeStats(branchId: string | null): Promise<StatRow[]> {
+  const items = readLocalHistory().filter((it) => !branchId || it.branchId === branchId);
+  return aggregate(
+    items,
+    (it) => it.ownerId,
+    (id) => items.find((it) => it.ownerId === id)?.ownerName || "—"
+  );
 }

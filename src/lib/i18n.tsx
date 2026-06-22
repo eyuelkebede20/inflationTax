@@ -7,11 +7,10 @@ import {
   type ReactNode,
 } from "react";
 
-export type Lang = "en" | "am" | "om";
+export type Lang = "en" | "om";
 
 export const LANGS: { code: Lang; label: string }[] = [
   { code: "om", label: "OM" },
-  { code: "am", label: "አማ" },
   { code: "en", label: "EN" },
 ];
 
@@ -62,17 +61,18 @@ const en: Dict = {
   "result.derived": "derived",
   "result.entered": "entered",
 
-  "table.tl": "TL",
-  "table.name": "Name",
+  "table.tl": "No.",
+  "table.group_2018": "Taaksii 2018",
+  "table.name": "Tax Payer Name",
   "table.tin": "TIN",
-  "table.business": "Business",
-  "table.lastyear_tax": "2017 tax",
-  "table.sales_before": "Sales before infl.",
-  "table.tax_before": "Tax before infl.",
-  "table.sales_with": "Sales with infl.",
-  "table.tax_with": "Tax with infl.",
-  "table.garaagaruma": "Garaagaruma",
-  "table.taaksii2018": "Taaksii Bara 2018",
+  "table.business": "Business Type",
+  "table.lastyear_tax": "Tax paid on 2017",
+  "table.sales_before": "Sales before inflation",
+  "table.tax_before": "Tax before inflation",
+  "table.sales_with": "Sales with inflation",
+  "table.tax_with": "Tax with inflation",
+  "table.garaagaruma": "Difference (I − G)",
+  "table.taaksii2018": "2018 tax (E + J)",
   "table.empty": "No entries yet. Add one above and it will appear here.",
 
   "analysis.entry": "Entry",
@@ -148,7 +148,7 @@ const en: Dict = {
   "chat.chip2": "What is the curfew rate?",
   "chat.chip3": "What's the difference between Tax and Rental?",
 
-  "print.subtitle": "Curfew + inflation tax — Schedule B",
+  "print.subtitle": "Taaksii Kafalaa Gibiraa Sadarkaa \"B\" 2018",
 
   "auth.signin": "Sign in",
   "auth.create_account": "Create account",
@@ -237,225 +237,48 @@ const en: Dict = {
 
   "profile.signin_to_change":
     "Sign in to change your password (available once auth is enabled).",
+
+  // --- v3 (hierarchy, user management, void approval) ---
+  "common.request_void": "Request void",
+  "common.request_void_prompt": "Reason to request voiding this printed entry:",
+  "common.void_requested": "Void request sent to your admin for approval.",
+
+  "admin.need_admin": "Switch to an admin account to manage a branch.",
+  "admin.team": "Team",
+  "admin.username": "Username",
+  "admin.fullname": "Full name",
+  "admin.add_user": "Add employee",
+  "admin.no_team": "No employees yet. Add one above.",
+  "admin.reset_pw": "Reset password",
+  "admin.reset_prompt": "New password for {name}:",
+  "admin.reset_done": "Password reset.",
+  "admin.err_user": "Username required and password must be 4+ characters.",
+  "admin.err_dupe": "That username is already taken.",
+  "admin.remove_confirm": "Remove {name}?",
+  "admin.void_requests": "Void requests",
+  "admin.no_voids": "No void requests.",
+  "admin.approve": "Approve",
+  "admin.reject": "Reject",
+  "admin.void_pending": "pending",
+  "admin.void_approved": "approved",
+  "admin.void_rejected": "rejected",
+  "admin.by_employee": "Summary by employee",
+  "admin.employee": "Employee",
+
+  "super.nav_overview": "Overview",
+  "super.nav_admins": "Admins",
+  "super.nav_settings": "Rates",
+  "super.nav_voids": "Voids",
+  "super.admins": "Admins",
+  "super.users": "Employees",
+  "super.add_admin": "Create admin",
+  "super.no_admins": "No admins yet. Create one above.",
+  "super.admins_help": "Each admin manages one branch and its employees.",
+  "super.admin_del_confirm": "Remove admin {name} and their {n} employees?",
+  "super.err_admin": "Branch, username and a password of 4+ characters are required.",
+  "super.voids_help": "Every void and request across all branches.",
 };
 
-const am: Dict = {
-  "nav.profile": "መገለጫ",
-  "nav.signin": "ግባ",
-  "nav.signout": "ውጣ",
-
-  "common.calculate": "አስላ",
-  "common.save": "አስቀምጥ",
-  "common.back": "← ወደ ማስያ ተመለስ",
-  "common.untitled": "ርዕስ የለም",
-  "common.change_settings": "በቅንብሮች ቀይር",
-  "common.inflation_in_use": "ጥቅም ላይ ያለ የዋጋ ግሽበት",
-  "common.saved_account": "በመለያህ ተቀምጧል",
-  "common.saved_device": "በዚህ መሣሪያ ተቀምጧል",
-
-  "home.title": "የአምናውን ግብር በዋጋ ግሽበት በፍትሐዊነት አስተካክል።",
-  "home.subtitle":
-    "አዲሱ ቋሚ \"የከርሰ-ምሽት\" መጣኔ ብዙ ጊዜ ንግዱ አምና ከከፈለው በጣም ያንሳል። ስለዚህ ወደ አዲሱ መጣኔ ከመመለስ ይልቅ የዘንድሮ ግብር የአምናውን ግብር ይዞ የግሽበቱን ጭማሪ ብቻ ይጨምራል።",
-  "home.why_title": "ለምን ጠቃሚ ሆነ",
-  "home.why_body":
-    "ለምሳሌ አበበ አምና 50,370 ከፍሏል (TOT + የትርፍ ግብር)። አዲሱ የከርሰ-ምሽት መጣኔ ብቻውን ~9,000 ሊያስከፍል ይችላል — ትልቅ ቅናሽ። በምትኩ፣ የዘንድሮ ግብር = የአምና ግብር + (በግሽበት የተስተካከለ ሽያጭ ላይ ያለ ከርሰ-ምሽት − የአምና ሽያጭ ላይ ያለ ከርሰ-ምሽት)። ግብሩ ከግሽበት ጋር ይሄዳል እንጂ ከተከፈለው አያንስም።",
-  "home.latest": "የቅርብ ውጤት",
-  "home.history": "ታሪክ",
-  "home.click_row": "ሙሉ ዝርዝር ለማየት ከታች ያለውን ረድፍ ጫን።",
-
-  "form.new_entry": "አዲስ ግቤት",
-  "form.help":
-    "ጠቅላላ ሽያጩን እና/ወይም የአምናውን ትክክለኛ ግብር አስገባ። ሽያጭ ካስገባህ ግብሩ ይሰላል፤ ግብር ካስገባህ ሽያጩ ይሰላል፤ ሁለቱንም ካስገባህ የተጻፈው ግብር ይወሰዳል።",
-  "form.name": "የግብር ከፋይ ስም",
-  "form.tin": "TIN",
-  "form.business_type": "የንግድ ዓይነት",
-  "form.is_service": "የአገልግሎት ንግድ (10% TOT ይተገበራል) — ለሌላ አንሳ",
-  "form.turnover": "ጠቅላላ ሽያጭ / ታክስ የሚከፈልበት ገቢ (ብር)",
-  "form.lastyear_tax": "የአምና የተከፈለ ግብር (አማራጭ)",
-  "form.err_need_input": "ጠቅላላ ሽያጭ ወይም የአምና ግብር አስገባ።",
-  "form.err_invalid": "ትክክለኛ፣ አሉታዊ ያልሆኑ ቁጥሮችን አስገባ።",
-
-  "result.lastyear_tax": "የአምና ግብር",
-  "result.tax_before": "የከርሰ-ምሽት ግብር (ከግሽበት በፊት)",
-  "result.tax_with": "የከርሰ-ምሽት ግብር (ከግሽበት ጋር)",
-  "result.garaagaruma": "ልዩነት (Garaagaruma)",
-  "result.taaksii2018": "Taaksii Bara 2018",
-  "result.derived": "የተሰላ",
-  "result.entered": "የገባ",
-
-  "table.tl": "ተራ",
-  "table.name": "ስም",
-  "table.tin": "TIN",
-  "table.business": "ንግድ",
-  "table.lastyear_tax": "የ2017 ግብር",
-  "table.sales_before": "ሽያጭ ከግሽበት በፊት",
-  "table.tax_before": "ግብር ከግሽበት በፊት",
-  "table.sales_with": "ሽያጭ ከግሽበት ጋር",
-  "table.tax_with": "ግብር ከግሽበት ጋር",
-  "table.garaagaruma": "Garaagaruma",
-  "table.taaksii2018": "Taaksii Bara 2018",
-  "table.empty": "እስካሁን ግቤት የለም። ከላይ አንዱን ጨምር።",
-
-  "analysis.entry": "ግቤት",
-  "analysis.metric": "መለኪያ",
-  "analysis.before": "ከግሽበት በፊት",
-  "analysis.with": "ከግሽበት ጋር",
-  "analysis.delta_abs": "ልዩነት",
-  "analysis.delta_pct": "ልዩነት (%)",
-  "analysis.turnover": "ጠቅላላ ሽያጭ",
-  "analysis.curfew_rate": "የከርሰ-ምሽት መጣኔ",
-  "analysis.curfew_tax": "የከርሰ-ምሽት ግብር",
-  "analysis.buildup": "የአምና ግብር",
-  "analysis.tot": "TOT",
-  "analysis.profit_tax": "የትርፍ ግብር",
-  "analysis.bracket_jump": "የዋጋ ግሽበት የከርሰ-ምሽት መጣኔን ከ{a} ወደ {b} ከፍ አደረገ።",
-  "analysis.result_title": "የዘንድሮ ግብር (Taaksii Bara 2018)",
-  "analysis.plus_diff": "+ የግሽበት ልዩነት",
-  "analysis.chart": "ከግሽበት በፊት እና በኋላ",
-  "analysis.result_note":
-    "ወደ አዲሱ የከርሰ-ምሽት መጣኔ አንመለስም — የአምናውን ግብር ይዘን የግሽበቱን ልዩነት ብቻ እንጨምራለን።",
-  "analysis.tot_dropped": "አገልግሎት አይደለም — TOT ተትቷል",
-
-  "profile.title": "መገለጫ",
-  "profile.signed_in_as": "የገባኸው እንደ {email}",
-  "profile.anon": "ስም-አልባ ሁነታ — ቅንብሮችና ታሪክ በዚህ መሣሪያ ይቆያሉ።",
-  "profile.settings": "ቅንብሮች",
-  "profile.inflation_rate": "የዋጋ ግሽበት መጣኔ (ለምሳሌ 0.152 ለ15.2%)",
-  "profile.tot_rate": "የTOT መጣኔ (ለምሳሌ 0.10 ለ10%)",
-  "profile.margin": "የትርፍ ህዳግ (ለምሳሌ 0.10 ለ10%)",
-  "profile.saved": "ቅንብሮች ተቀምጠዋል።",
-  "profile.err_settings": "መጣኔዎች አሉታዊ ያልሆኑ ቁጥሮች መሆን አለባቸው።",
-  "profile.reset_title": "ታሪክ አጥፋ",
-  "profile.reset_help": "ሁሉንም የተቀመጡ ግቤቶች በቋሚነት ሰርዝ።",
-  "profile.reset_btn": "ሁሉንም ታሪክ ሰርዝ",
-  "profile.reset_done": "ሁሉም ታሪክ ተሰርዟል።",
-  "profile.reset_confirm": "ሁሉንም ግቤቶች ሰርዝ? ይህ መመለስ አይቻልም።",
-  "profile.account": "መለያ",
-  "profile.change_pw": "የይለፍ ቃል ቀይር",
-  "profile.update": "አዘምን",
-  "profile.pw_updated": "የይለፍ ቃል ተቀይሯል።",
-  "profile.language": "ቋንቋ",
-
-  "common.err_load": "ታሪክን መጫን አልተሳካም።",
-  "common.err_save": "ስሌቱን ማስቀመጥ አልተሳካም።",
-  "common.delete": "ሰርዝ",
-  "common.delete_confirm": "ይህን ግቤት ሰርዝ?",
-  "common.print": "አትም",
-  "common.share": "አጋራ",
-  "common.copied": "ሊንኩ ተቀድቷል",
-  "common.search": "ስም፣ TIN፣ ንግድ ፈልግ…",
-  "common.filter_all": "ሁሉም",
-  "common.filter_service": "አገልግሎት",
-  "common.filter_nonservice": "አገልግሎት ያልሆነ",
-  "common.no_match": "ከፍለጋህ ጋር የሚዛመድ ግቤት የለም።",
-
-  "shared.title": "የተጋራ ትንታኔ",
-  "shared.invalid": "ይህ የተጋራ ሊንክ ልክ ያልሆነ ወይም ያልተሟላ ነው።",
-  "shared.open_app": "InflaTax ክፈት →",
-
-  "chat.title": "InflaTax ጠይቅ",
-  "chat.placeholder": "ስለ ግብሩ፣ ግሽበቱ ወይም አጠቃቀሙ ጠይቅ…",
-  "chat.send": "ላክ",
-  "chat.intro":
-    "ሰላም! ስለዚህ ማስያ ማንኛውንም ጠይቀኝ — የከርሰ-ምሽት መጣኔ፣ TOT፣ የትርፍ ግብር፣ ግሽበት ወይም አንድ ቁጥር እንዴት እንደተገኘ።",
-  "chat.error": "የሆነ ችግር ተፈጥሯል። እባክህ እንደገና ሞክር።",
-  "chat.not_configured":
-    "ረዳቱ ገና አልተዘጋጀም። ለማስቻል GEMINI_API_KEY አክል።",
-  "chat.rate_limited":
-    "ለጊዜው ነፃ የአጠቃቀም ገደብ ላይ ደርሻለሁ። እባክህ 2 ደቂቃ ያህል ጠብቀህ እንደገና ሞክር — ወይም ቆይተህ ተመለስ።",
-  "chat.thinking": "በማሰብ ላይ…",
-  "chat.chip1": "የዘንድሮ ግብር እንዴት ይሰላል?",
-  "chat.chip2": "የከርሰ-ምሽት መጣኔ ስንት ነው?",
-  "chat.chip3": "በግብር እና በኪራይ መካከል ያለው ልዩነት ምንድን ነው?",
-
-  "print.subtitle": "የከርሰ-ምሽት + ግሽበት ግብር — ሰንጠረዥ B",
-
-  "auth.signin": "ግባ",
-  "auth.create_account": "መለያ ፍጠር",
-  "auth.email": "ኢሜይል",
-  "auth.password": "የይለፍ ቃል",
-  "auth.new_password": "አዲስ የይለፍ ቃል",
-  "auth.no_account": "መለያ የለህም?",
-  "auth.have_account": "መለያ አለህ?",
-  "auth.forgot": "የይለፍ ቃል ረሳህ?",
-  "auth.continue_anon": "ሳትገባ ቀጥል →",
-  "auth.reset_title": "የይለፍ ቃል ዳግም አስጀምር",
-  "auth.reset_help": "አዲስ የይለፍ ቃል ለማስያዝ ሊንክ በኢሜይል እንልክልሃለን።",
-  "auth.send_reset": "የዳግም ማስጀመሪያ ሊንክ ላክ",
-  "auth.reset_sent": "የይለፍ ቃል ማስጀመሪያ ሊንክ ኢሜይልህን ተመልከት።",
-  "auth.back_signin": "ወደ መግቢያ ተመለስ",
-  "auth.update_title": "አዲስ የይለፍ ቃል አስይዝ",
-  "auth.update_help": "ይህን ገጽ ከኢሜይልህ ሊንክ ክፈት።",
-  "auth.update_btn": "የይለፍ ቃል አዘምን",
-  "auth.updated": "የይለፍ ቃል ተቀይሯል። በመዘዋወር ላይ…",
-  "auth.created": "መለያ ተፈጥሯል። ለማረጋገጥ ኢሜይልህን ተመልክተህ ግባ።",
-  "auth.import_local": "በዚህ መሣሪያ የተቀመጡ ስሌቶችን ወደ መለያህ አስገባ?",
-  "auth.pw_min": "የይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት።",
-
-  "footer.tag": "InflaTax · የከርሰ-ምሽት + ግሽበት ግብር ማስያ (ሰንጠረዥ B)",
-
-  // --- v2 ---
-  "nav.dashboard": "ዳሽቦርድ",
-  "nav.admin": "አስተዳዳሪ",
-  "nav.superadmin": "ሱፐር አስተዳዳሪ",
-  "nav.dev_role": "ሚና ቅድመ-እይታ",
-  "nav.all_branches": "ሁሉም ቅርንጫፎች",
-
-  "form.kind": "የግቤት ዓይነት",
-  "form.kind_tax": "ግብር",
-  "form.kind_rental": "ኪራይ",
-  "form.rental_note": "ኪራይ፡ ከገቢው {pct} ብቻ ለስሌቱ ይውላል።",
-  "form.err_required": "ስም፣ TIN፣ ሽያጭ እና የአምና ግብር ሙላ።",
-
-  "common.print_all": "ሁሉንም አትም",
-  "common.print_card": "ካርድ አትም",
-  "common.void": "ሰርዝ",
-  "common.void_prompt": "ይህን የተቆለፈ ግቤት ለመሰረዝ ምክንያት፡",
-  "common.void_need_reason": "ግቤትን ለመሰረዝ ምክንያት ያስፈልጋል።",
-  "common.void_default_reason": "በአስተዳዳሪ ተሰርዟል",
-  "common.voided": "ተሰርዟል",
-  "common.locked": "ተቆልፏል (ታትሟል)",
-  "common.prev": "ቀዳሚ",
-  "common.next": "ቀጣይ",
-  "common.page_of": "ገጽ {page} ከ {total}",
-  "common.total_entries": "{n} ግቤቶች",
-
-  "print.card_title": "የግብር ስሌት — ሰንጠረዥ B 2018",
-
-  "analysis.rental_base": "ኪራይ — {pct} ለስሌቱ = {base}",
-
-  "admin.title": "የአስተዳዳሪ ዳሽቦርድ",
-  "admin.subtitle": "ቅርንጫፍ፡ {branch}",
-  "admin.no_branch": "ሁሉም ቅርንጫፎች",
-  "admin.entries": "ግቤቶች",
-  "admin.total_lastyear": "ጠቅላላ የአምና ግብር",
-  "admin.total_2018": "ጠቅላላ ታክሲ 2018",
-  "admin.review_note": "የግለሰብ ግቤቶችን በ",
-  "admin.open_entries": "ግቤቶች ገጽ ላይ ይመልከቱ →",
-
-  "super.title": "የሱፐር አስተዳዳሪ ዳሽቦርድ",
-  "super.subtitle": "ቅርንጫፎች፣ አጠቃላይ መጣኔዎች፣ ትንታኔ እና የስረዛ መዝገብ።",
-  "super.rates": "አጠቃላይ መጣኔዎች",
-  "super.rental_share": "የኪራይ ድርሻ (ለምሳሌ 0.5 ለ50%)",
-  "super.err_rates": "መጣኔዎች አሉታዊ ያልሆኑ ቁጥሮች መሆን አለባቸው።",
-  "super.branches": "ቅርንጫፎች",
-  "super.branch_name": "አዲስ የቅርንጫፍ ስም",
-  "super.branch_ph": "ለምሳሌ ቦሌ ቅርንጫፍ",
-  "super.add_branch": "ቅርንጫፍ ጨምር",
-  "super.no_branches": "እስካሁን ቅርንጫፍ የለም። ከላይ ጨምር።",
-  "super.branch_del_confirm": "ይህን ቅርንጫፍ ሰርዝ?",
-  "super.admin_note":
-    "የይለፍ ቃል ያላቸው አስተዳዳሪዎችን መፍጠር የአገልጋይ-ጎን ማረጋገጫ ይፈልጋል (tasks.md ይመልከቱ) — ለአሁኑ ቅርንጫፎች የቅድመ-እይታ ናቸው።",
-  "super.analytics": "የቅርንጫፍ ትንታኔ",
-  "super.grand_total": "ጠቅላላ ድምር",
-  "super.branch": "ቅርንጫፍ",
-  "super.voids": "የስረዛ ማሳወቂያዎች",
-  "super.no_voids": "የተሰረዙ ግቤቶች የሉም።",
-  "super.ack": "አረጋግጥ",
-  "super.rate_note": "የኪራይ ግቤቶች በአሁኑ ጊዜ ከገቢ {r} ለስሌቱ ይውላሉ።",
-
-  "profile.signin_to_change": "የይለፍ ቃልህን ለመቀየር ግባ (ማረጋገጫ ሲነቃ ይገኛል)።",
-};
 
 const om: Dict = {
   "nav.profile": "Profaayilii",
@@ -501,17 +324,18 @@ const om: Dict = {
   "result.derived": "shallagame",
   "result.entered": "galche",
 
-  "table.tl": "TL",
-  "table.name": "Maqaa",
+  "table.tl": "Lakk.",
+  "table.group_2018": "Taaksii 2018",
+  "table.name": "Maqaa kafalaa Gibiraa",
   "table.tin": "TIN",
-  "table.business": "Daldala",
-  "table.lastyear_tax": "Taaksii 2017",
-  "table.sales_before": "Sales before inflation",
-  "table.tax_before": "tax before inflation",
-  "table.sales_with": "sales with inflation",
-  "table.tax_with": "Tax with inflation",
-  "table.garaagaruma": "Garaagaruma",
-  "table.taaksii2018": "Taaksii Bara 2018",
+  "table.business": "Gosa daldala",
+  "table.lastyear_tax": "Taaksii waliigala bara 2017 kafale",
+  "table.sales_before": "Gurgurtaa qaala'iinsa gabaa duraa",
+  "table.tax_before": "Taaksii qaala'iinsa gabaa dura",
+  "table.sales_with": "Gurgurtaa qaala'iinsa gabaa qabu",
+  "table.tax_with": "Taaksii qaala'iinsa gabaa qabu",
+  "table.garaagaruma": "Garaagaruma (I − G)",
+  "table.taaksii2018": "Taaksii bara 2018 (E + J)",
   "table.empty": "Hanga ammaatti galmeen hin jiru. Olitti tokko dabali.",
 
   "analysis.entry": "Galmee",
@@ -588,7 +412,7 @@ const om: Dict = {
   "chat.chip2": "Saffisni sadarkaa meeqa?",
   "chat.chip3": "Garaagarummaan Taaksii fi Kiraa maali?",
 
-  "print.subtitle": "Taaksii sadarkaa + dhiibbaa gatii — Gabatee B",
+  "print.subtitle": "Taaksii Kafalaa Gibiraa Sadarkaa \"B\" 2018",
 
   "auth.signin": "Seeni",
   "auth.create_account": "Herrega uumi",
@@ -679,9 +503,49 @@ const om: Dict = {
 
   "profile.signin_to_change":
     "Jecha iccitii kee jijjiiruuf seeni (yeroo mirkaneessi banamu argama).",
+
+  // --- v3 ---
+  "common.request_void": "Haquu gaafadhu",
+  "common.request_void_prompt": "Sababa galmee maxxanfame kana haquuf gaafachuuf:",
+  "common.void_requested": "Gaafanni haquu mirkaneessaaf bulchaa keetiif ergameera.",
+
+  "admin.need_admin": "Damee bulchuuf gara herrega bulchaatti jijjiiri.",
+  "admin.team": "Garee",
+  "admin.username": "Maqaa fayyadamaa",
+  "admin.fullname": "Maqaa guutuu",
+  "admin.add_user": "Hojjetaa dabali",
+  "admin.no_team": "Hojjetaan hin jiru. Olitti dabali.",
+  "admin.reset_pw": "Jecha iccitii haaromsi",
+  "admin.reset_prompt": "Jecha iccitii haaraa {name}f:",
+  "admin.reset_done": "Jechi iccitii haaromfame.",
+  "admin.err_user": "Maqaa fayyadamaa fi jecha iccitii qubee 4+ barbaachisa.",
+  "admin.err_dupe": "Maqaan fayyadamaa kun fudhatameera.",
+  "admin.remove_confirm": "{name} haquu?",
+  "admin.void_requests": "Gaafannoo haquu",
+  "admin.no_voids": "Gaafanni haquu hin jiru.",
+  "admin.approve": "Mirkaneessi",
+  "admin.reject": "Didi",
+  "admin.void_pending": "eegaa jira",
+  "admin.void_approved": "mirkanaa'e",
+  "admin.void_rejected": "didame",
+  "admin.by_employee": "Cuunfaa hojjetaadhaan",
+  "admin.employee": "Hojjetaa",
+
+  "super.nav_overview": "Waliigala",
+  "super.nav_admins": "Bulchitoota",
+  "super.nav_settings": "Saffisa",
+  "super.nav_voids": "Haqaa",
+  "super.admins": "Bulchitoota",
+  "super.users": "Hojjettoota",
+  "super.add_admin": "Bulchaa uumi",
+  "super.no_admins": "Bulchaan hin jiru. Olitti uumi.",
+  "super.admins_help": "Bulchaan tokko damee tokkoo fi hojjettoota isaa bulcha.",
+  "super.admin_del_confirm": "Bulchaa {name} fi hojjettoota {n} isaa haquu?",
+  "super.err_admin": "Damee, maqaa fayyadamaa fi jecha iccitii qubee 4+ barbaachisa.",
+  "super.voids_help": "Haqaa fi gaafannoo damee hunda keessaa.",
 };
 
-const dicts: Record<Lang, Dict> = { en, am, om };
+const dicts: Record<Lang, Dict> = { en, om };
 
 interface I18nValue {
   lang: Lang;
@@ -700,7 +564,7 @@ const STORAGE_KEY = "lang";
 function initialLang(): Lang {
   const saved = localStorage.getItem(STORAGE_KEY) as Lang | null;
   if (saved && dicts[saved]) return saved;
-  return "en";
+  return "om"; // Afaan Oromo is the form's native language (Schedule "B")
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {

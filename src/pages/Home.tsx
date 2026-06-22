@@ -8,8 +8,9 @@ import {
   deleteCalculation,
   getHistory,
   markPrinted,
+  requestVoid,
   saveCalculation,
-  voidCalculation,
+  voidDirect,
   type EntryMeta,
   type HistoryItem,
 } from "../lib/storage";
@@ -22,7 +23,7 @@ const PAGE_SIZE = 20;
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
-  const { role, branchId } = useRole();
+  const { identity, role, branchId } = useRole();
   const { settings, loading: settingsLoading } = useSettings();
   const { t } = useT();
 
@@ -39,7 +40,15 @@ export default function Home() {
     if (authLoading) return;
     let active = true;
     setLoadingHistory(true);
-    getHistory({ userId, role, branchId, page, pageSize: PAGE_SIZE, search })
+    getHistory({
+      userId,
+      accountId: identity.id,
+      role,
+      branchId,
+      page,
+      pageSize: PAGE_SIZE,
+      search,
+    })
       .then((res) => {
         if (!active) return;
         setItems(res.items);
@@ -50,7 +59,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [authLoading, userId, role, branchId, page, search, t]);
+  }, [authLoading, userId, identity.id, role, branchId, page, search, t]);
 
   useEffect(() => {
     const cleanup = reload();
@@ -93,12 +102,17 @@ export default function Home() {
     }
   }
 
-  async function handleVoid(item: HistoryItem, reason: string) {
-    try {
-      await voidCalculation(userId, item, reason || t("common.void_default_reason"));
+  // Employees request a void (admin approves later); admins/superadmins void
+  // directly. Both keep a trail the superadmin sees overall.
+  function handleVoid(item: HistoryItem, reason: string) {
+    const r = reason || t("common.void_default_reason");
+    if (role === "user") {
+      requestVoid(item, { id: identity.id, name: identity.name }, r);
+      setError(null);
+      window.alert(t("common.void_requested"));
+    } else {
+      voidDirect(item, { name: identity.name }, r);
       reload();
-    } catch {
-      setError(t("common.err_save"));
     }
   }
 

@@ -1,18 +1,6 @@
 import type { HistoryItem } from "../lib/storage";
-import { yoyChange } from "../lib/calc";
-import { formatBirr, formatBirrDelta, formatPct, formatRate } from "../lib/format";
+import { formatBirr, formatBirrDelta, formatRate } from "../lib/format";
 import { useT } from "../lib/i18n";
-
-function DeltaCells({ base, current }: { base: number; current: number }) {
-  const { abs, pct } = yoyChange(base, current);
-  const cls = abs > 0 ? "delta-up" : abs < 0 ? "delta-down" : "muted";
-  return (
-    <>
-      <div className={`num ${cls}`}>{formatBirrDelta(abs)}</div>
-      <div className={`num col-delta ${cls}`}>{formatPct(pct)}</div>
-    </>
-  );
-}
 
 function Bars({
   label,
@@ -94,49 +82,6 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
             <div className="muted small delta-up">{formatBirrDelta(item.garaagaruma)}</div>
           </div>
         </div>
-      </div>
-
-      {/* Before vs with inflation (curfew) */}
-      <div className="card">
-        <h2>{t("analysis.chart")}</h2>
-        <div className="compare-grid">
-          <div className="head">{t("analysis.metric")}</div>
-          <div className="head num">{t("analysis.before")}</div>
-          <div className="head num">{t("analysis.with")}</div>
-          <div className="head num">{t("analysis.delta_abs")}</div>
-          <div className="head num col-delta">{t("analysis.delta_pct")}</div>
-
-          <div className="rowlabel">{t("analysis.turnover")}</div>
-          <div className="num">{formatBirr(item.base)}</div>
-          <div className="num">{formatBirr(item.salesWith)}</div>
-          <DeltaCells base={item.base} current={item.salesWith} />
-
-          <div className="rowlabel">{t("analysis.curfew_rate")}</div>
-          <div className="num">{formatRate(item.curfewRateBefore)}</div>
-          <div className="num">{formatRate(item.curfewRateWith)}</div>
-          <div className="num muted">—</div>
-          <div className="num muted col-delta">—</div>
-
-          <div className="rowlabel" style={{ fontWeight: 700 }}>
-            {t("analysis.curfew_tax")}
-          </div>
-          <div className="num" style={{ fontWeight: 700 }}>
-            {formatBirr(item.taxBefore)}
-          </div>
-          <div className="num" style={{ fontWeight: 700 }}>
-            {formatBirr(item.taxWith)}
-          </div>
-          <DeltaCells base={item.taxBefore} current={item.taxWith} />
-        </div>
-
-        {item.curfewRateWith > item.curfewRateBefore && (
-          <div className="alert info" style={{ marginTop: 14, marginBottom: 0 }}>
-            {t("analysis.bracket_jump", {
-              a: formatRate(item.curfewRateBefore),
-              b: formatRate(item.curfewRateWith),
-            })}
-          </div>
-        )}
       </div>
 
       {/* Result build-up */}
