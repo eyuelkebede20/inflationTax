@@ -58,7 +58,7 @@ export default function ChatWidget() {
             <button
               className="chat-close"
               onClick={() => setOpen(false)}
-              aria-label="Close"
+              aria-label={t("common.close")}
             >
               ✕
             </button>

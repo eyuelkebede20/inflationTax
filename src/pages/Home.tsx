@@ -31,10 +31,20 @@ export default function Home() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<CalcResult | null>(null);
+
+  // Debounce the search box so we don't refetch on every keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const reload = useCallback(() => {
     if (authLoading) return;
@@ -47,7 +57,7 @@ export default function Home() {
       branchId,
       page,
       pageSize: PAGE_SIZE,
-      search,
+      search: debouncedSearch,
     })
       .then((res) => {
         if (!active) return;
@@ -59,7 +69,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [authLoading, userId, identity.id, role, branchId, page, search, t]);
+  }, [authLoading, userId, identity.id, role, branchId, page, debouncedSearch, t]);
 
   useEffect(() => {
     const cleanup = reload();

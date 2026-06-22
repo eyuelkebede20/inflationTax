@@ -93,11 +93,15 @@ needs a server-side function using the Supabase service role.
 
 ## 8. Supabase (`supabase/schema.sql`, `supabase/seed.sql`)
 Tables: `branches`, `profiles` (role + branch, auto-created on signup),
-`app_settings` (singleton rates), `calculations` (full result + `owner_name` +
-lock/void columns), `void_requests` (request → approve/reject). RPCs:
-`request_void`, `decide_void`. RLS scopes rows by user/branch/superadmin.
-Indexes on `(user_id, created_at)` and `(branch_id, created_at)` for 100+ users.
-`seed.sql` seeds a superadmin (change the email/password before running).
+`app_settings` (singleton rates), `calculations` (full result + `owner_id`/
+`owner_name` + lock/void columns), `void_requests` (request → approve/reject).
+RPCs: `request_void`, `decide_void`. Views: `branch_stats`, `employee_stats`
+(`security_invoker` so dashboards aggregate in the DB under the caller's RLS —
+no pulling every row to the client). RLS scopes rows by user/branch/superadmin
+and wraps `auth.uid()` in `(select auth.uid())` (per-statement, not per-row).
+Indexes for 100+ users: `(user_id, created_at)`, `(branch_id, created_at)`,
+`(created_at)` global feed, and `pg_trgm` GIN on `name`/`tin`/`business_type`
+for fast `ILIKE` search. `seed.sql` seeds a superadmin (change creds first).
 
 ## 9. Progress / changelog
 - **v1** — initial: TOT + profit-tax model, per-user history, optional auth,
@@ -121,10 +125,23 @@ Indexes on `(user_id, created_at)` and `(branch_id, created_at)` for 100+ users.
   the "Before vs with inflation" card. Superadmin can **drill into an admin** and
   manage that admin's employees (shared `UserManager`). Every entry is **signed**
   (owner + `owner_id`) and printed cards carry a **QR code** (lazy `qrcode`).
+- **v3.2** (current) — UI/i18n consistency pass: localized the last hardcoded
+  strings (Analysis back link + "not found", chat close button → `common.close`,
+  `analysis.not_found`); verified en/om key parity (229 each, no fallbacks).
+  Removed dead CSS from retired features (`.toggle`/`.slider`, `.compare-grid`/
+  `.rowlabel`/`.col-delta`, `.callout`) and renamed stale bar classes
+  `.y2016`/`.y2017` → `.before`/`.with`. CSS bundle ~14.7→12.9 kB.
+- **v3.3** (current) — scalability pass on the schema + data layer: DB-side
+  aggregate views (`branch_stats`/`employee_stats`, `security_invoker`) wired into
+  `getBranchStats`/`getEmployeeStats` (no more client-side summing of all rows);
+  `pg_trgm` GIN indexes for `ILIKE` search; global `(created_at)` indexes for the
+  superadmin feeds; `(select auth.uid())` per-statement RLS; debounced history
+  search (300 ms).
 
 ## 10. Known gaps / next
 - Flip `AUTH_ENABLED`; back `useRole()` with the `profiles` table; drop the dev
   switcher.
 - Server-side function (service role) to create real admin/user auth accounts.
-- Move branch stats / void feed from localStorage to a SQL view / RPC.
-- Debounce history search. Optional: TIN-per-branch uniqueness.
+- Optional next scale steps: keyset (cursor) pagination instead of offset+`count:
+  'exact'` for very deep history; consider `owner_id` as `uuid` once auth is live;
+  TIN-per-branch uniqueness constraint.

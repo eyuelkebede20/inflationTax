@@ -627,16 +627,56 @@ function aggregate(
   return [...by.values()].sort((a, b) => b.taaksii2018 - a.taaksii2018);
 }
 
-/** Superadmin overview: one row per branch. */
+interface StatViewRow {
+  branch_id: string | null;
+  branch_name?: string | null;
+  owner_id?: string | null;
+  owner_name?: string | null;
+  count: number;
+  last_year_tax: number;
+  garaagaruma: number;
+  taaksii_2018: number;
+}
+
+function viewToStat(r: StatViewRow, idKey: "branch_id" | "owner_id"): StatRow {
+  return {
+    id: r[idKey] ?? null,
+    name: (idKey === "branch_id" ? r.branch_name : r.owner_name) ?? r[idKey] ?? "—",
+    count: Number(r.count),
+    lastYearTax: Number(r.last_year_tax),
+    garaagaruma: Number(r.garaagaruma),
+    taaksii2018: Number(r.taaksii_2018),
+  };
+}
+
+/** Superadmin overview: one row per branch (DB-aggregated via the branch_stats view). */
 export async function getBranchStats(): Promise<StatRow[]> {
+  if (supabase) {
+    const { data, error } = await supabase.from("branch_stats").select("*");
+    if (!error && data) {
+      return (data as StatViewRow[])
+        .map((r) => viewToStat(r, "branch_id"))
+        .sort((a, b) => b.taaksii2018 - a.taaksii2018);
+    }
+  }
   const branches = getBranches();
   const nameOf = (id: string | null) =>
     branches.find((b) => b.id === id)?.name ?? (id || "—");
   return aggregate(readLocalHistory(), (it) => it.branchId, nameOf);
 }
 
-/** Admin view: one row per employee within a branch. */
+/** Admin view: one row per employee within a branch (DB-aggregated via employee_stats). */
 export async function getEmployeeStats(branchId: string | null): Promise<StatRow[]> {
+  if (supabase) {
+    let q = supabase.from("employee_stats").select("*");
+    if (branchId) q = q.eq("branch_id", branchId);
+    const { data, error } = await q;
+    if (!error && data) {
+      return (data as StatViewRow[])
+        .map((r) => viewToStat(r, "owner_id"))
+        .sort((a, b) => b.taaksii2018 - a.taaksii2018);
+    }
+  }
   const items = readLocalHistory().filter((it) => !branchId || it.branchId === branchId);
   return aggregate(
     items,

@@ -97,6 +97,17 @@ user / admin / superadmin dashboards in nav (auth scaffolded but **commented** f
 - note: 2 pre-existing npm advisories are dev-only (vite/esbuild dev server),
       NOT from qrcode; fix needs a breaking vite 8 upgrade — left as-is.
 
+## Round 5 — scalability review (schema + UI fit)
+Verdict: foundation is solid; fixed the real gaps:
+- [x] DB-side aggregate views `branch_stats`/`employee_stats` (`security_invoker`),
+      wired into getBranchStats/getEmployeeStats — no more pulling all rows to sum.
+- [x] `pg_trgm` GIN indexes on name/tin/business_type → fast ILIKE search at scale.
+- [x] Global `(created_at)` indexes on calculations + void_requests (superadmin feeds).
+- [x] RLS `(select auth.uid())` per-statement (Supabase perf best practice).
+- [x] Debounced history search (300 ms).
+Deferred (noted in claude.md §10): keyset pagination vs offset+count:exact for
+very deep pages; owner_id → uuid when auth is live; TIN-per-branch uniqueness.
+
 ## Remaining / follow-ups (not done this pass)
 - [ ] **Activate auth.** Flip `AUTH_ENABLED` in config.ts, wire `profiles` to a
       real `useRole()` (read signed-in user's role/branch), remove the dev switcher.

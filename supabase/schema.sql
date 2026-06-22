@@ -8,6 +8,7 @@
 -- ===========================================================================
 
 create extension if not exists pgcrypto;
+create extension if not exists pg_trgm; -- trigram indexes for fast ILIKE search
 
 -- ---- Branches --------------------------------------------------------------
 create table if not exists public.branches (
@@ -96,6 +97,39 @@ create table public.calculations (
 -- Indexes for 100+ users: branch dashboards + per-user history, newest first.
 create index calculations_user_created_idx on public.calculations (user_id, created_at desc);
 create index calculations_branch_created_idx on public.calculations (branch_id, created_at desc);
+-- Superadmin's global "all entries, newest first" feed.
+create index calculations_created_idx on public.calculations (created_at desc);
+-- Trigram indexes so the taxpayer search (ILIKE %q%) stays fast at scale.
+create index calculations_name_trgm on public.calculations using gin (name gin_trgm_ops);
+create index calculations_tin_trgm on public.calculations using gin (tin gin_trgm_ops);
+create index calculations_btype_trgm on public.calculations using gin (business_type gin_trgm_ops);
+
+-- Server-side aggregates for the dashboards (so we never pull every row to the
+-- client to sum). security_invoker => each view runs under the caller's RLS, so
+-- an admin only aggregates their own branch; the superadmin sees all.
+create or replace view public.branch_stats with (security_invoker = true) as
+  select c.branch_id,
+         b.name as branch_name,
+         count(*)              as count,
+         sum(c.last_year_tax)  as last_year_tax,
+         sum(c.garaagaruma)    as garaagaruma,
+         sum(c.taaksii_2018)   as taaksii_2018
+  from public.calculations c
+  left join public.branches b on b.id = c.branch_id
+  where not c.voided
+  group by c.branch_id, b.name;
+
+create or replace view public.employee_stats with (security_invoker = true) as
+  select c.branch_id,
+         c.owner_id,
+         max(c.owner_name)     as owner_name,
+         count(*)              as count,
+         sum(c.last_year_tax)  as last_year_tax,
+         sum(c.garaagaruma)    as garaagaruma,
+         sum(c.taaksii_2018)   as taaksii_2018
+  from public.calculations c
+  where not c.voided
+  group by c.branch_id, c.owner_id;
 
 -- ---- Void requests + approval flow ----------------------------------------
 -- An employee REQUESTS a void on a locked row; their branch admin APPROVES or
@@ -116,6 +150,7 @@ create table if not exists public.void_requests (
   created_at timestamptz not null default now()
 );
 create index void_requests_branch_idx on public.void_requests (branch_id, status, created_at desc);
+create index void_requests_created_idx on public.void_requests (created_at desc); -- superadmin global feed
 
 -- Employee (or admin) opens a request. Admin opening one is auto-approved.
 create or replace function public.request_void(p_calc_id uuid, p_reason text)
@@ -180,9 +215,11 @@ create policy branches_write on public.branches for all
   using (public.my_role() = 'superadmin') with check (public.my_role() = 'superadmin');
 
 -- profiles: read own; superadmin reads all; superadmin updates roles/branches.
+-- Note: auth.uid() is wrapped in a scalar subquery so the planner evaluates it
+-- once per statement instead of once per row (Supabase RLS perf best practice).
 drop policy if exists profiles_self on public.profiles;
 create policy profiles_self on public.profiles for select
-  using (id = auth.uid() or public.my_role() = 'superadmin');
+  using (id = (select auth.uid()) or public.my_role() = 'superadmin');
 drop policy if exists profiles_super_write on public.profiles;
 create policy profiles_super_write on public.profiles for update
   using (public.my_role() = 'superadmin') with check (public.my_role() = 'superadmin');
@@ -200,28 +237,28 @@ create policy settings_write on public.app_settings for all
 --   delete: own + not locked (printed rows are immutable; admins void instead)
 drop policy if exists calc_select on public.calculations;
 create policy calc_select on public.calculations for select using (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   or (public.my_role() = 'admin' and branch_id = public.my_branch())
   or public.my_role() = 'superadmin'
 );
 drop policy if exists calc_insert on public.calculations;
-create policy calc_insert on public.calculations for insert with check (user_id = auth.uid());
+create policy calc_insert on public.calculations for insert with check (user_id = (select auth.uid()));
 drop policy if exists calc_update on public.calculations;
 create policy calc_update on public.calculations for update
-  using (user_id = auth.uid() and not locked);
+  using (user_id = (select auth.uid()) and not locked);
 drop policy if exists calc_delete on public.calculations;
 create policy calc_delete on public.calculations for delete
-  using (user_id = auth.uid() and not locked);
+  using (user_id = (select auth.uid()) and not locked);
 
 -- void_requests:
 --   select: own requests, your branch (admin), or all (superadmin)
 --   insert: employees create their own (decisions go through decide_void RPC)
 drop policy if exists void_select on public.void_requests;
 create policy void_select on public.void_requests for select using (
-  requested_by = auth.uid()
+  requested_by = (select auth.uid())
   or (public.my_role() = 'admin' and branch_id = public.my_branch())
   or public.my_role() = 'superadmin'
 );
 drop policy if exists void_insert on public.void_requests;
 create policy void_insert on public.void_requests for insert
-  with check (requested_by = auth.uid());
+  with check (requested_by = (select auth.uid()));

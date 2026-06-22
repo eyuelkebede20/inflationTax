@@ -285,6 +285,9 @@ const en: Dict = {
   "card.signed_by": "Signed by",
   "card.ref": "Ref",
   "card.scan": "Scan to verify",
+
+  "common.close": "Close",
+  "analysis.not_found": "Calculation not found.",
 };
 
 
@@ -559,6 +562,9 @@ const om: Dict = {
   "card.signed_by": "Kan mallatteesse",
   "card.ref": "Wabii",
   "card.scan": "Mirkaneessuuf skaani",
+
+  "common.close": "Cufi",
+  "analysis.not_found": "Shallaggiin hin argamne.",
 };
 
 const dicts: Record<Lang, Dict> = { en, om };

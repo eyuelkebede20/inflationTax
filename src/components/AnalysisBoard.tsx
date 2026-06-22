@@ -17,10 +17,10 @@ function Bars({
   return (
     <div className="chart-group">
       <div className="bars">
-        <div className="bar y2016" style={{ height: h(vBase) }}>
+        <div className="bar before" style={{ height: h(vBase) }}>
           <span className="val">{formatBirr(vBase)}</span>
         </div>
-        <div className="bar y2017" style={{ height: h(vInfl) }}>
+        <div className="bar with" style={{ height: h(vInfl) }}>
           <span className="val">{formatBirr(vInfl)}</span>
         </div>
       </div>

@@ -3,9 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import AnalysisBoard from "../components/AnalysisBoard";
 import { useAuth } from "../hooks/AuthContext";
 import { getCalculation, type HistoryItem } from "../lib/storage";
+import { useT } from "../lib/i18n";
 
 export default function Analysis() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useT();
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
 
@@ -30,7 +32,7 @@ export default function Analysis() {
     <div className="container">
       <div style={{ marginBottom: 16 }}>
         <Link to="/" className="linkbtn">
-          ← Back to calculator
+          {t("common.back")}
         </Link>
       </div>
 
@@ -41,7 +43,7 @@ export default function Analysis() {
       )}
       {error && <div className="alert error">{error}</div>}
       {!loading && !error && !item && (
-        <div className="card empty">Calculation not found.</div>
+        <div className="card empty">{t("analysis.not_found")}</div>
       )}
       {item && <AnalysisBoard item={item} />}
     </div>
