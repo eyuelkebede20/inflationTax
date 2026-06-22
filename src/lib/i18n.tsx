@@ -141,7 +141,12 @@ const en: Dict = {
   "chat.error": "Something went wrong. Please try again.",
   "chat.not_configured":
     "The assistant isn't set up yet. Add a GEMINI_API_KEY to enable it.",
+  "chat.rate_limited":
+    "I've hit the free usage limit for a moment. Please wait about 2 minutes and try again — or come back shortly.",
   "chat.thinking": "Thinking…",
+  "chat.chip1": "How is this year's tax calculated?",
+  "chat.chip2": "What is the curfew rate?",
+  "chat.chip3": "When does TOT apply?",
 
   "print.subtitle": "Curfew + inflation tax — Schedule B",
 
@@ -293,7 +298,12 @@ const am: Dict = {
   "chat.error": "የሆነ ችግር ተፈጥሯል። እባክህ እንደገና ሞክር።",
   "chat.not_configured":
     "ረዳቱ ገና አልተዘጋጀም። ለማስቻል GEMINI_API_KEY አክል።",
+  "chat.rate_limited":
+    "ለጊዜው ነፃ የአጠቃቀም ገደብ ላይ ደርሻለሁ። እባክህ 2 ደቂቃ ያህል ጠብቀህ እንደገና ሞክር — ወይም ቆይተህ ተመለስ።",
   "chat.thinking": "በማሰብ ላይ…",
+  "chat.chip1": "የዘንድሮ ግብር እንዴት ይሰላል?",
+  "chat.chip2": "የከርሰ-ምሽት መጣኔ ስንት ነው?",
+  "chat.chip3": "TOT መቼ ይተገበራል?",
 
   "print.subtitle": "የከርሰ-ምሽት + ግሽበት ግብር — ሰንጠረዥ B",
 
@@ -446,7 +456,12 @@ const om: Dict = {
   "chat.error": "Wanti tokko dogoggore. Maaloo irra deebi'ii yaali.",
   "chat.not_configured":
     "Gargaaraan ammatti hin qophoofne. Dandeessisuuf GEMINI_API_KEY dabali.",
+  "chat.rate_limited":
+    "Yeroof daangaa fayyadama bilisaa ga'eera. Maaloo daqiiqaa 2 eegii irra deebi'ii yaali — yookiin booda deebi'i.",
   "chat.thinking": "Yaadaa jira…",
+  "chat.chip1": "Taaksiin bara kanaa akkamitti shallagama?",
+  "chat.chip2": "Saffisni sadarkaa meeqa?",
+  "chat.chip3": "TOT yoom hojiirra oola?",
 
   "print.subtitle": "Taaksii sadarkaa + dhiibbaa gatii — Gabatee B",
 

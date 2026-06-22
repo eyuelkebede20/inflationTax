@@ -56,10 +56,7 @@ export default async function handler(req: any, res: any) {
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    res.status(200).json({
-      reply:
-        "The assistant isn't set up yet. Add a GEMINI_API_KEY environment variable in Vercel (free key from https://aistudio.google.com/app/apikey) and redeploy.",
-    });
+    res.status(200).json({ code: "not_configured" });
     return;
   }
 
@@ -95,7 +92,9 @@ export default async function handler(req: any, res: any) {
     });
 
     if (!gres.ok) {
-      res.status(200).json({ reply: "Sorry, the assistant is busy. Try again." });
+      res
+        .status(200)
+        .json({ code: gres.status === 429 ? "rate_limited" : "error" });
       return;
     }
 
@@ -106,6 +105,6 @@ export default async function handler(req: any, res: any) {
         .join("") || "Sorry, I couldn't answer that.";
     res.status(200).json({ reply });
   } catch {
-    res.status(200).json({ reply: "Sorry, something went wrong. Try again." });
+    res.status(200).json({ code: "error" });
   }
 }
