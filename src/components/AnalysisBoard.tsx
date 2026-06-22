@@ -1,11 +1,6 @@
 import type { HistoryItem } from "../lib/storage";
 import { yoyChange } from "../lib/calc";
-import {
-  formatBirr,
-  formatBirrDelta,
-  formatPct,
-  formatRate,
-} from "../lib/format";
+import { formatBirr, formatBirrDelta, formatPct, formatRate } from "../lib/format";
 import { useT } from "../lib/i18n";
 
 function DeltaCells({ base, current }: { base: number; current: number }) {
@@ -55,6 +50,7 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
     item.taaksiiBara2018,
     1
   );
+  const kindLabel = item.kind === "rental" ? t("form.kind_rental") : t("form.kind_tax");
 
   return (
     <div className="stack">
@@ -66,40 +62,36 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
             {item.businessType ? ` · ${item.businessType}` : ""}
           </h2>
           <span className="pill">
-            {t("common.inflation_in_use")} {formatRate(item.inflationRate)}
+            {kindLabel} · {t("common.inflation_in_use")} {formatRate(item.inflationRate)}
           </span>
         </div>
 
-        {/* Last year's tax build-up */}
         <div className="result-cards">
           <div className="result-card">
             <div className="k">{t("analysis.turnover")}</div>
             <div className="result-big">{formatBirr(item.turnover)}</div>
+            {item.kind === "rental" && (
+              <div className="muted small">
+                {t("analysis.rental_base", {
+                  pct: formatRate(item.rentalShare),
+                  base: formatBirr(item.base),
+                })}
+              </div>
+            )}
           </div>
           <div className="result-card">
-            <div className="k">{t("analysis.tot")}</div>
-            <div className="result-big">{formatBirr(item.tot)}</div>
-            <div className="muted small">
-              {item.isService
-                ? formatRate(item.totRate)
-                : t("analysis.tot_dropped")}
-            </div>
+            <div className="k">{t("result.lastyear_tax")}</div>
+            <div className="result-big">{formatBirr(item.lastYearTax)}</div>
           </div>
           <div className="result-card">
-            <div className="k">{t("analysis.profit_tax")}</div>
-            <div className="result-big">{formatBirr(item.profitTaxAmt)}</div>
-            <div className="muted small">
-              {formatRate(item.profitMargin)} → {formatBirr(item.profitBase)}
-            </div>
+            <div className="k">{t("analysis.curfew_tax")}</div>
+            <div className="result-big">{formatBirr(item.taxBefore)}</div>
+            <div className="muted small">{formatRate(item.curfewRateBefore)}</div>
           </div>
           <div className="result-card" style={{ borderColor: "var(--brand)" }}>
-            <div className="k">{t("analysis.buildup")}</div>
-            <div className="result-big">{formatBirr(item.lastYearTax)}</div>
-            <div className="muted small">
-              {item.lastYearTaxManual
-                ? t("result.entered")
-                : t("result.derived")}
-            </div>
+            <div className="k">{t("result.taaksii2018")}</div>
+            <div className="result-big">{formatBirr(item.taaksiiBara2018)}</div>
+            <div className="muted small delta-up">{formatBirrDelta(item.garaagaruma)}</div>
           </div>
         </div>
       </div>
@@ -115,9 +107,9 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
           <div className="head num col-delta">{t("analysis.delta_pct")}</div>
 
           <div className="rowlabel">{t("analysis.turnover")}</div>
-          <div className="num">{formatBirr(item.turnover)}</div>
+          <div className="num">{formatBirr(item.base)}</div>
           <div className="num">{formatBirr(item.salesWith)}</div>
-          <DeltaCells base={item.turnover} current={item.salesWith} />
+          <DeltaCells base={item.base} current={item.salesWith} />
 
           <div className="rowlabel">{t("analysis.curfew_rate")}</div>
           <div className="num">{formatRate(item.curfewRateBefore)}</div>
@@ -157,18 +149,12 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
           </div>
           <div className="result-card">
             <div className="k">{t("analysis.plus_diff")}</div>
-            <div className="result-big delta-up">
-              {formatBirrDelta(item.garaagaruma)}
-            </div>
+            <div className="result-big delta-up">{formatBirrDelta(item.garaagaruma)}</div>
           </div>
           <div className="result-card" style={{ borderColor: "var(--brand)" }}>
             <div className="k">{t("result.taaksii2018")}</div>
             <div className="result-big">{formatBirr(item.taaksiiBara2018)}</div>
           </div>
-        </div>
-
-        <div className="alert info" style={{ marginTop: 4 }}>
-          {t("analysis.result_note")}
         </div>
 
         <div className="chart">

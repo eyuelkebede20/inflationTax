@@ -1,14 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { computeResult, type CalcConfig, type CalcResult } from "../lib/calc";
+import { computeResult, type CalcConfig, type CalcResult, type EntryKind } from "../lib/calc";
 import { formatRate } from "../lib/format";
+import { useRole } from "../hooks/RoleContext";
+import type { EntryMeta } from "../lib/storage";
 import { useT } from "../lib/i18n";
-
-export interface EntryMeta {
-  name: string | null;
-  tin: string | null;
-  businessType: string | null;
-}
 
 interface Props {
   config: CalcConfig;
@@ -18,10 +13,11 @@ interface Props {
 
 export default function DataInput({ config, onCalculated, saving }: Props) {
   const { t } = useT();
+  const { branchId } = useRole();
   const [name, setName] = useState("");
   const [tin, setTin] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [isService, setIsService] = useState(true);
+  const [kind, setKind] = useState<EntryKind>("tax");
   const [turnover, setTurnover] = useState("");
   const [lastYearTax, setLastYearTax] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,67 +26,53 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
     e.preventDefault();
     setError(null);
 
-    const hasTurnover = turnover.trim() !== "";
-    const hasTax = lastYearTax.trim() !== "";
-    if (!hasTurnover && !hasTax) {
-      setError(t("form.err_need_input"));
+    // Required: name, TIN, turnover, last-year tax. Business type is optional.
+    if (!name.trim() || !tin.trim() || turnover.trim() === "" || lastYearTax.trim() === "") {
+      setError(t("form.err_required"));
       return;
     }
 
     const tv = Number(turnover);
     const lv = Number(lastYearTax);
-    if (
-      (hasTurnover && (!Number.isFinite(tv) || tv < 0)) ||
-      (hasTax && (!Number.isFinite(lv) || lv < 0))
-    ) {
+    if (!Number.isFinite(tv) || tv < 0 || !Number.isFinite(lv) || lv < 0) {
       setError(t("form.err_invalid"));
       return;
     }
 
     const result = computeResult(config, {
-      turnover: hasTurnover ? tv : undefined,
-      lastYearTax: hasTax ? lv : undefined,
-      isService,
+      turnover: tv,
+      lastYearTax: lv,
+      kind,
     });
     onCalculated(result, {
-      name: name.trim() || null,
-      tin: tin.trim() || null,
+      name: name.trim(),
+      tin: tin.trim(),
       businessType: businessType.trim() || null,
+      branchId,
     });
     setName("");
     setTin("");
     setBusinessType("");
-    setIsService(true);
+    setKind("tax");
     setTurnover("");
     setLastYearTax("");
   }
 
   return (
-    <div className="card">
+    <div className="card no-print">
       <h2>{t("form.new_entry")}</h2>
-      <p className="muted small" style={{ marginTop: 0 }}>
-        {t("form.help")}
-      </p>
 
       <form onSubmit={handleCalculate}>
         {error && <div className="alert error">{error}</div>}
 
         <div className="row">
           <label className="field grow">
-            <span className="label">{t("form.name")}</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <span className="label">{t("form.name")} *</span>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="field grow">
-            <span className="label">{t("form.tin")}</span>
-            <input
-              type="text"
-              value={tin}
-              onChange={(e) => setTin(e.target.value)}
-            />
+            <span className="label">{t("form.tin")} *</span>
+            <input type="text" value={tin} onChange={(e) => setTin(e.target.value)} />
           </label>
           <label className="field grow">
             <span className="label">{t("form.business_type")}</span>
@@ -102,21 +84,31 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
           </label>
         </div>
 
-        <label className="toggle-field">
-          <span className="toggle">
-            <input
-              type="checkbox"
-              checked={isService}
-              onChange={(e) => setIsService(e.target.checked)}
-            />
-            <span className="slider" />
-          </span>
-          <span>{t("form.is_service")}</span>
-        </label>
+        <div className="seg" role="group" aria-label={t("form.kind")}>
+          <button
+            type="button"
+            className={`seg-btn${kind === "tax" ? " active" : ""}`}
+            onClick={() => setKind("tax")}
+          >
+            {t("form.kind_tax")}
+          </button>
+          <button
+            type="button"
+            className={`seg-btn${kind === "rental" ? " active" : ""}`}
+            onClick={() => setKind("rental")}
+          >
+            {t("form.kind_rental")}
+          </button>
+        </div>
+        {kind === "rental" && (
+          <p className="muted small" style={{ marginTop: 6 }}>
+            {t("form.rental_note", { pct: formatRate(config.rentalShare) })}
+          </p>
+        )}
 
         <div className="row">
           <label className="field grow">
-            <span className="label">{t("form.turnover")}</span>
+            <span className="label">{t("form.turnover")} *</span>
             <input
               type="number"
               inputMode="decimal"
@@ -125,11 +117,10 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
               placeholder="450000"
               value={turnover}
               onChange={(e) => setTurnover(e.target.value)}
-              autoFocus
             />
           </label>
           <label className="field grow">
-            <span className="label">{t("form.lastyear_tax")}</span>
+            <span className="label">{t("form.lastyear_tax")} *</span>
             <input
               type="number"
               inputMode="decimal"
@@ -149,9 +140,7 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
       </form>
 
       <div className="pill">
-        {t("common.inflation_in_use")}: {formatRate(config.inflationRate)} · TOT{" "}
-        {formatRate(config.totRate)} · {formatRate(config.profitMargin)}{" "}
-        <Link to="/profile">{t("common.change_settings")}</Link>
+        {t("common.inflation_in_use")}: {formatRate(config.inflationRate)}
       </div>
     </div>
   );

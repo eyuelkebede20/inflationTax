@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { hasLocalHistory, importLocalHistory } from "../lib/storage";
 import { useT } from "../lib/i18n";
 
 export default function Login() {
@@ -17,8 +16,7 @@ export default function Login() {
     setError(null);
     setBusy(true);
 
-    const hadLocal = hasLocalHistory();
-    const { data, error } = await supabase!.auth.signInWithPassword({
+    const { error } = await supabase!.auth.signInWithPassword({
       email,
       password,
     });
@@ -27,16 +25,6 @@ export default function Login() {
     if (error) {
       setError(error.message);
       return;
-    }
-
-    if (hadLocal && data.user) {
-      if (window.confirm(t("auth.import_local"))) {
-        try {
-          await importLocalHistory(data.user.id);
-        } catch {
-          /* non-fatal */
-        }
-      }
     }
     navigate("/");
   }

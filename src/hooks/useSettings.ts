@@ -1,45 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  getSettings,
-  setSettings as persistSettings,
+  getAppSettings,
+  setAppSettings,
   DEFAULT_SETTINGS,
   type AppSettings,
 } from "../lib/storage";
-import { useAuth } from "./AuthContext";
 
+// Global app settings (inflation rate, rental share). Managed by superadmins;
+// read everywhere the calculator runs.
 export function useSettings() {
-  const { user, loading: authLoading } = useAuth();
-  const userId = user?.id ?? null;
-
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) return;
     let active = true;
     setLoading(true);
-    getSettings(userId)
-      .then((s) => {
-        if (active) setSettings(s);
-      })
-      .catch(() => {
-        if (active) setSettings(DEFAULT_SETTINGS);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    getAppSettings()
+      .then((s) => active && setSettings(s))
+      .catch(() => active && setSettings(DEFAULT_SETTINGS))
+      .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [userId, authLoading]);
+  }, []);
 
-  const update = useCallback(
-    async (next: AppSettings) => {
-      await persistSettings(userId, next);
-      setSettings(next);
-    },
-    [userId]
-  );
+  const update = useCallback(async (next: AppSettings) => {
+    await setAppSettings(next);
+    setSettings(next);
+  }, []);
 
   return { settings, update, loading };
 }

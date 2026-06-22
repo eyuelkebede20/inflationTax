@@ -1,18 +1,31 @@
 import type { CalcResult } from "./calc";
 import { supabase } from "./supabase";
-import { DEFAULT_INFLATION_RATE, DEFAULT_TOT_RATE, DEFAULT_PROFIT_MARGIN } from "../config";
+import { DEFAULT_INFLATION_RATE, DEFAULT_RENTAL_SHARE } from "../config";
+import type { Branch, Role } from "../hooks/RoleContext";
+
+// ---------------------------------------------------------------------------
+// Persistence. Calculations + global settings round-trip through Supabase when
+// configured, else localStorage. Branches/admins are local-only for now (the
+// dev preview layer) until auth + the profiles table are activated — see
+// tasks.md. Everything is paginated so 100+ users stay fast.
+// ---------------------------------------------------------------------------
 
 export interface AppSettings {
   inflationRate: number;
-  totRate: number;
-  profitMargin: number;
+  rentalShare: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   inflationRate: DEFAULT_INFLATION_RATE,
-  totRate: DEFAULT_TOT_RATE,
-  profitMargin: DEFAULT_PROFIT_MARGIN,
+  rentalShare: DEFAULT_RENTAL_SHARE,
 };
+
+export interface EntryMeta {
+  name: string | null;
+  tin: string | null;
+  businessType: string | null;
+  branchId: string | null;
+}
 
 // A saved calculation, app-side shape (camelCase).
 export interface HistoryItem extends CalcResult {
@@ -21,10 +34,32 @@ export interface HistoryItem extends CalcResult {
   name: string | null;
   tin: string | null;
   businessType: string | null;
+  branchId: string | null;
+  locked: boolean; // fixed once printed — user can no longer edit/delete
+  printedAt: string | null;
+  voided: boolean; // admin removed a locked row (kept for the void trail)
+  voidReason: string | null;
+}
+
+export interface HistoryScope {
+  userId: string | null;
+  role: Role;
+  branchId: string | null;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  total: number;
 }
 
 const HISTORY_KEY = "calc_history";
-const SETTINGS_KEY = "calc_settings";
+const SETTINGS_KEY = "app_settings";
+const BRANCHES_KEY = "branches";
+const VOID_KEY = "void_log";
+const DEFAULT_PAGE_SIZE = 20;
 
 // ---- localStorage helpers --------------------------------------------------
 
@@ -41,8 +76,21 @@ function writeLocalHistory(items: HistoryItem[]): void {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
 }
 
-function localId(): string {
-  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function localId(prefix = "local"): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Apply role/branch visibility + search to a flat list (local mode + reuse).
+function applyScope(all: HistoryItem[], scope: HistoryScope): HistoryItem[] {
+  const q = scope.search?.trim().toLowerCase();
+  return all.filter((it) => {
+    if (scope.role === "admin" && scope.branchId && it.branchId !== scope.branchId)
+      return false;
+    if (!q) return true;
+    return [it.name, it.tin, it.businessType]
+      .filter(Boolean)
+      .some((v) => v!.toLowerCase().includes(q));
+  });
 }
 
 // ---- DB row mapping --------------------------------------------------------
@@ -53,16 +101,13 @@ interface DbRow {
   name: string | null;
   tin: string | null;
   business_type: string | null;
+  branch_id: string | null;
+  kind: string;
   turnover: number;
-  inflation_rate: number;
-  tot_rate: number;
-  profit_margin: number;
-  is_service: boolean;
-  profit_base: number;
-  profit_tax_amt: number;
-  tot: number;
   last_year_tax: number;
-  last_year_tax_manual: boolean;
+  inflation_rate: number;
+  rental_share: number;
+  base: number;
   curfew_rate_before: number;
   tax_before: number;
   sales_with: number;
@@ -70,6 +115,10 @@ interface DbRow {
   tax_with: number;
   garaagaruma: number;
   taaksii_2018: number;
+  locked: boolean;
+  printed_at: string | null;
+  voided: boolean;
+  void_reason: string | null;
 }
 
 function rowToItem(r: DbRow): HistoryItem {
@@ -79,16 +128,13 @@ function rowToItem(r: DbRow): HistoryItem {
     name: r.name,
     tin: r.tin,
     businessType: r.business_type,
+    branchId: r.branch_id,
+    kind: r.kind === "rental" ? "rental" : "tax",
     turnover: Number(r.turnover),
-    inflationRate: Number(r.inflation_rate),
-    totRate: Number(r.tot_rate),
-    profitMargin: Number(r.profit_margin),
-    isService: Boolean(r.is_service),
-    profitBase: Number(r.profit_base),
-    profitTaxAmt: Number(r.profit_tax_amt),
-    tot: Number(r.tot),
     lastYearTax: Number(r.last_year_tax),
-    lastYearTaxManual: Boolean(r.last_year_tax_manual),
+    inflationRate: Number(r.inflation_rate),
+    rentalShare: Number(r.rental_share),
+    base: Number(r.base),
     curfewRateBefore: Number(r.curfew_rate_before),
     taxBefore: Number(r.tax_before),
     salesWith: Number(r.sales_with),
@@ -96,31 +142,26 @@ function rowToItem(r: DbRow): HistoryItem {
     taxWith: Number(r.tax_with),
     garaagaruma: Number(r.garaagaruma),
     taaksiiBara2018: Number(r.taaksii_2018),
+    locked: Boolean(r.locked),
+    printedAt: r.printed_at,
+    voided: Boolean(r.voided),
+    voidReason: r.void_reason,
   };
 }
 
-interface Meta {
-  name: string | null;
-  tin: string | null;
-  businessType: string | null;
-}
-
-function itemToInsert(userId: string, r: CalcResult, m: Meta) {
+function itemToInsert(userId: string, r: CalcResult, m: EntryMeta) {
   return {
     user_id: userId,
     name: m.name,
     tin: m.tin,
     business_type: m.businessType,
+    branch_id: m.branchId,
+    kind: r.kind,
     turnover: r.turnover,
-    inflation_rate: r.inflationRate,
-    tot_rate: r.totRate,
-    profit_margin: r.profitMargin,
-    is_service: r.isService,
-    profit_base: r.profitBase,
-    profit_tax_amt: r.profitTaxAmt,
-    tot: r.tot,
     last_year_tax: r.lastYearTax,
-    last_year_tax_manual: r.lastYearTaxManual,
+    inflation_rate: r.inflationRate,
+    rental_share: r.rentalShare,
+    base: r.base,
     curfew_rate_before: r.curfewRateBefore,
     tax_before: r.taxBefore,
     sales_with: r.salesWith,
@@ -133,16 +174,34 @@ function itemToInsert(userId: string, r: CalcResult, m: Meta) {
 
 // ---- History API -----------------------------------------------------------
 
-export async function getHistory(userId: string | null): Promise<HistoryItem[]> {
-  if (userId && supabase) {
-    const { data, error } = await supabase
+export async function getHistory(scope: HistoryScope): Promise<HistoryPage> {
+  const page = scope.page ?? 0;
+  const pageSize = scope.pageSize ?? DEFAULT_PAGE_SIZE;
+
+  if (scope.userId && supabase) {
+    let query = supabase
       .from("calculations")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    // Admins see their branch; users see their own rows (enforced by RLS too).
+    if (scope.role === "admin" && scope.branchId)
+      query = query.eq("branch_id", scope.branchId);
+    if (scope.search)
+      query = query.or(
+        `name.ilike.%${scope.search}%,tin.ilike.%${scope.search}%,business_type.ilike.%${scope.search}%`
+      );
+    const { data, error, count } = await query;
     if (error) throw error;
-    return (data as DbRow[]).map(rowToItem);
+    return { items: (data as DbRow[]).map(rowToItem), total: count ?? 0 };
   }
-  return readLocalHistory();
+
+  const filtered = applyScope(readLocalHistory(), scope);
+  const start = page * pageSize;
+  return {
+    items: filtered.slice(start, start + pageSize),
+    total: filtered.length,
+  };
 }
 
 export async function getCalculation(
@@ -164,7 +223,7 @@ export async function getCalculation(
 export async function saveCalculation(
   userId: string | null,
   result: CalcResult,
-  meta: Meta
+  meta: EntryMeta
 ): Promise<HistoryItem> {
   if (userId && supabase) {
     const { data, error } = await supabase
@@ -178,61 +237,151 @@ export async function saveCalculation(
 
   const item: HistoryItem = {
     ...result,
+    ...meta,
     id: localId(),
     createdAt: new Date().toISOString(),
-    ...meta,
+    locked: false,
+    printedAt: null,
+    voided: false,
+    voidReason: null,
   };
-  const items = [item, ...readLocalHistory()];
-  writeLocalHistory(items);
+  writeLocalHistory([item, ...readLocalHistory()]);
   return item;
 }
 
+/** Lock a row once it has been printed — it becomes fixed (idea #9). */
+export async function markPrinted(
+  userId: string | null,
+  id: string
+): Promise<void> {
+  const printedAt = new Date().toISOString();
+  if (userId && supabase) {
+    const { error } = await supabase
+      .from("calculations")
+      .update({ locked: true, printed_at: printedAt })
+      .eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  writeLocalHistory(
+    readLocalHistory().map((h) =>
+      h.id === id ? { ...h, locked: true, printedAt } : h
+    )
+  );
+}
+
+/** Hard delete — only allowed on unlocked rows (UI + RLS both enforce this). */
 export async function deleteCalculation(
   userId: string | null,
   id: string
 ): Promise<void> {
   if (userId && supabase) {
-    const { error } = await supabase.from("calculations").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
-  const items = readLocalHistory().filter((h) => h.id !== id);
-  writeLocalHistory(items);
-}
-
-export async function resetHistory(userId: string | null): Promise<void> {
-  if (userId && supabase) {
     const { error } = await supabase
       .from("calculations")
       .delete()
-      .eq("user_id", userId);
+      .eq("id", id)
+      .eq("locked", false);
     if (error) throw error;
     return;
   }
-  localStorage.removeItem(HISTORY_KEY);
+  writeLocalHistory(
+    readLocalHistory().filter((h) => !(h.id === id && !h.locked))
+  );
 }
 
-// ---- Settings API ----------------------------------------------------------
+export interface VoidEntry {
+  id: string;
+  calcId: string;
+  name: string | null;
+  reason: string;
+  branchId: string | null;
+  at: string;
+  acknowledged: boolean;
+}
 
-export async function getSettings(userId: string | null): Promise<AppSettings> {
+/** Admin voids a locked row; the trail is kept and surfaced to superadmins. */
+export async function voidCalculation(
+  userId: string | null,
+  item: HistoryItem,
+  reason: string
+): Promise<void> {
+  const at = new Date().toISOString();
   if (userId && supabase) {
-    const { data, error } = await supabase
-      .from("user_settings")
-      .select("inflation_rate, tot_rate, profit_margin")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { error } = await supabase.rpc("void_calculation", {
+      p_calc_id: item.id,
+      p_reason: reason,
+    });
     if (error) throw error;
-    if (data) {
+    return;
+  }
+  writeLocalHistory(
+    readLocalHistory().map((h) =>
+      h.id === item.id ? { ...h, voided: true, voidReason: reason } : h
+    )
+  );
+  const log = readVoidLog();
+  log.unshift({
+    id: localId("void"),
+    calcId: item.id,
+    name: item.name,
+    reason,
+    branchId: item.branchId,
+    at,
+    acknowledged: false,
+  });
+  localStorage.setItem(VOID_KEY, JSON.stringify(log));
+}
+
+function readVoidLog(): VoidEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(VOID_KEY) || "[]") as VoidEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getVoidLog(): Promise<VoidEntry[]> {
+  return readVoidLog();
+}
+
+export async function acknowledgeVoid(id: string): Promise<void> {
+  localStorage.setItem(
+    VOID_KEY,
+    JSON.stringify(
+      readVoidLog().map((v) => (v.id === id ? { ...v, acknowledged: true } : v))
+    )
+  );
+}
+
+export async function resetHistory(scope: HistoryScope): Promise<void> {
+  if (scope.userId && supabase) {
+    const { error } = await supabase
+      .from("calculations")
+      .delete()
+      .eq("user_id", scope.userId)
+      .eq("locked", false);
+    if (error) throw error;
+    return;
+  }
+  // Local: clear only unlocked rows so printed records survive.
+  writeLocalHistory(readLocalHistory().filter((h) => h.locked));
+}
+
+// ---- Settings API (global, superadmin-managed) -----------------------------
+
+export async function getAppSettings(): Promise<AppSettings> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("app_settings")
+      .select("inflation_rate, rental_share")
+      .eq("id", 1)
+      .maybeSingle();
+    if (!error && data) {
       return {
         inflationRate: Number(data.inflation_rate),
-        totRate: data.tot_rate != null ? Number(data.tot_rate) : DEFAULT_TOT_RATE,
-        profitMargin:
-          data.profit_margin != null
-            ? Number(data.profit_margin)
-            : DEFAULT_PROFIT_MARGIN,
+        rentalShare: Number(data.rental_share),
       };
     }
-    return DEFAULT_SETTINGS;
   }
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (raw) {
@@ -243,11 +392,10 @@ export async function getSettings(userId: string | null): Promise<AppSettings> {
           typeof p.inflationRate === "number"
             ? p.inflationRate
             : DEFAULT_INFLATION_RATE,
-        totRate: typeof p.totRate === "number" ? p.totRate : DEFAULT_TOT_RATE,
-        profitMargin:
-          typeof p.profitMargin === "number"
-            ? p.profitMargin
-            : DEFAULT_PROFIT_MARGIN,
+        rentalShare:
+          typeof p.rentalShare === "number"
+            ? p.rentalShare
+            : DEFAULT_RENTAL_SHARE,
       };
     } catch {
       /* ignore */
@@ -256,49 +404,81 @@ export async function getSettings(userId: string | null): Promise<AppSettings> {
   return DEFAULT_SETTINGS;
 }
 
-export async function setSettings(
-  userId: string | null,
-  s: AppSettings
-): Promise<void> {
-  if (userId && supabase) {
-    const { error } = await supabase.from("user_settings").upsert(
-      {
-        user_id: userId,
-        inflation_rate: s.inflationRate,
-        tot_rate: s.totRate,
-        profit_margin: s.profitMargin,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
-    if (error) throw error;
-    return;
+export async function setAppSettings(s: AppSettings): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase.from("app_settings").upsert({
+      id: 1,
+      inflation_rate: s.inflationRate,
+      rental_share: s.rentalShare,
+      updated_at: new Date().toISOString(),
+    });
+    if (!error) return;
   }
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
-// ---- Import local history into DB on first sign-in -------------------------
+// ---- Branches (dev/local preview layer) ------------------------------------
 
-export async function importLocalHistory(userId: string): Promise<number> {
-  if (!supabase) return 0;
-  const local = readLocalHistory();
-  if (local.length === 0) return 0;
-
-  const rows = local.map((h) => ({
-    ...itemToInsert(userId, h, {
-      name: h.name,
-      tin: h.tin,
-      businessType: h.businessType,
-    }),
-    created_at: h.createdAt,
-  }));
-
-  const { error } = await supabase.from("calculations").insert(rows);
-  if (error) throw error;
-  localStorage.removeItem(HISTORY_KEY);
-  return rows.length;
+export function getBranches(): Branch[] {
+  try {
+    return JSON.parse(localStorage.getItem(BRANCHES_KEY) || "[]") as Branch[];
+  } catch {
+    return [];
+  }
 }
 
-export function hasLocalHistory(): boolean {
-  return readLocalHistory().length > 0;
+export function createBranch(name: string): Branch {
+  const branch: Branch = { id: localId("branch"), name };
+  localStorage.setItem(
+    BRANCHES_KEY,
+    JSON.stringify([...getBranches(), branch])
+  );
+  return branch;
+}
+
+export function deleteBranch(id: string): void {
+  localStorage.setItem(
+    BRANCHES_KEY,
+    JSON.stringify(getBranches().filter((b) => b.id !== id))
+  );
+}
+
+// ---- Aggregate stats (dashboards) ------------------------------------------
+// Local/preview implementation. With Supabase live, back this with a SQL view
+// or RPC that GROUP BYs branch_id so it stays O(branches), not O(rows).
+
+export interface BranchStat {
+  branchId: string | null;
+  name: string;
+  count: number;
+  lastYearTax: number;
+  garaagaruma: number;
+  taaksii2018: number;
+}
+
+export async function getBranchStats(): Promise<BranchStat[]> {
+  const branches = getBranches();
+  const nameOf = (id: string | null) =>
+    branches.find((b) => b.id === id)?.name ?? (id ? id : "—");
+  const byBranch = new Map<string | null, BranchStat>();
+  for (const it of readLocalHistory()) {
+    if (it.voided) continue;
+    const key = it.branchId;
+    const stat =
+      byBranch.get(key) ??
+      {
+        branchId: key,
+        name: nameOf(key),
+        count: 0,
+        lastYearTax: 0,
+        garaagaruma: 0,
+        taaksii2018: 0,
+      };
+    stat.count += 1;
+    stat.lastYearTax += it.lastYearTax;
+    stat.garaagaruma += it.garaagaruma;
+    stat.taaksii2018 += it.taaksiiBara2018;
+    byBranch.set(key, stat);
+  }
+  return [...byBranch.values()].sort((a, b) => b.taaksii2018 - a.taaksii2018);
 }

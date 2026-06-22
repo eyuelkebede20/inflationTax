@@ -1,36 +1,36 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { HistoryItem } from "../lib/storage";
+import type { Role } from "../hooks/RoleContext";
 import { formatBirr } from "../lib/format";
 import { buildShareUrl } from "../lib/share";
+import { printCard } from "../lib/printCard";
 import { useT } from "../lib/i18n";
 
 interface Props {
   items: HistoryItem[];
+  total: number;
   loading: boolean;
+  page: number;
+  pageSize: number;
+  setPage: (n: number) => void;
+  search: string;
+  setSearch: (s: string) => void;
+  role: Role;
   onDelete: (id: string) => void;
+  onPrinted: (id: string) => void;
+  onVoid: (item: HistoryItem, reason: string) => void;
 }
 
-type Filter = "all" | "service" | "nonservice";
-
-export default function HistoryList({ items, loading, onDelete }: Props) {
+export default function HistoryList(props: Props) {
+  const { items, total, loading, page, pageSize, setPage, search, setSearch, role } = props;
   const navigate = useNavigate();
   const { t } = useT();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((it) => {
-      if (filter === "service" && !it.isService) return false;
-      if (filter === "nonservice" && it.isService) return false;
-      if (!q) return true;
-      return [it.name, it.tin, it.businessType]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(q));
-    });
-  }, [items, query, filter]);
+  const canVoid = role === "admin" || role === "superadmin";
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const firstIndex = page * pageSize;
 
   async function share(item: HistoryItem) {
     const url = buildShareUrl(item);
@@ -48,7 +48,34 @@ export default function HistoryList({ items, loading, onDelete }: Props) {
   }
 
   function del(item: HistoryItem) {
-    if (window.confirm(t("common.delete_confirm"))) onDelete(item.id);
+    if (window.confirm(t("common.delete_confirm"))) props.onDelete(item.id);
+  }
+
+  function voidRow(item: HistoryItem) {
+    const reason = window.prompt(t("common.void_prompt"));
+    if (reason && reason.trim()) props.onVoid(item, reason.trim());
+    else if (reason !== null) window.alert(t("common.void_need_reason"));
+  }
+
+  async function printRow(item: HistoryItem) {
+    await printCard(item, {
+      title: t("print.card_title"),
+      subtitle: t("print.subtitle"),
+      name: t("table.name"),
+      tin: t("table.tin"),
+      business: t("table.business"),
+      kind: t("form.kind"),
+      kind_tax: t("form.kind_tax"),
+      kind_rental: t("form.kind_rental"),
+      lastyear_tax: t("table.lastyear_tax"),
+      sales_before: t("table.sales_before"),
+      tax_before: t("table.tax_before"),
+      sales_with: t("table.sales_with"),
+      tax_with: t("table.tax_with"),
+      garaagaruma: t("table.garaagaruma"),
+      taaksii2018: t("table.taaksii2018"),
+    });
+    if (!item.locked) props.onPrinted(item.id);
   }
 
   if (loading) {
@@ -71,107 +98,160 @@ export default function HistoryList({ items, loading, onDelete }: Props) {
         <div className="ph-date">{new Date().toLocaleDateString()}</div>
       </div>
 
-      {items.length > 0 && (
+      {(total > 0 || search) && (
         <div className="toolbar no-print">
           <input
             type="search"
             className="toolbar-search"
             placeholder={t("common.search")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
           />
-          <select
-            className="toolbar-select"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as Filter)}
-          >
-            <option value="all">{t("common.filter_all")}</option>
-            <option value="service">{t("common.filter_service")}</option>
-            <option value="nonservice">{t("common.filter_nonservice")}</option>
-          </select>
-          <button
-            className="btn secondary"
-            type="button"
-            onClick={() => window.print()}
-          >
-            🖨 {t("common.print")}
+          <button className="btn secondary" type="button" onClick={() => window.print()}>
+            🖨 {t("common.print_all")}
           </button>
         </div>
       )}
 
-      {items.length === 0 ? (
-        <div className="empty">{t("table.empty")}</div>
-      ) : filtered.length === 0 ? (
-        <div className="empty">{t("common.no_match")}</div>
+      {total === 0 ? (
+        <div className="empty">{search ? t("common.no_match") : t("table.empty")}</div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className="history-table">
-            <thead>
-              <tr>
-                <th className="col-action no-print" aria-hidden="true"></th>
-                <th>{t("table.tl")}</th>
-                <th>{t("table.name")}</th>
-                <th>{t("table.tin")}</th>
-                <th>{t("table.business")}</th>
-                <th className="num">{t("table.lastyear_tax")}</th>
-                <th className="num">{t("table.sales_before")}</th>
-                <th className="num">{t("table.tax_before")}</th>
-                <th className="num">{t("table.sales_with")}</th>
-                <th className="num">{t("table.tax_with")}</th>
-                <th className="num">{t("table.garaagaruma")}</th>
-                <th className="num">{t("table.taaksii2018")}</th>
-                <th className="col-action no-print" aria-hidden="true"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item, i) => (
-                <tr key={item.id} onClick={() => navigate(`/analysis/${item.id}`)}>
-                  <td className="col-action no-print">
-                    <button
-                      className="row-del"
-                      title={t("common.delete")}
-                      aria-label={t("common.delete")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        del(item);
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </td>
-                  <td className="muted">{filtered.length - i}</td>
-                  <td style={{ fontWeight: 600 }}>
-                    {item.name || t("common.untitled")}
-                  </td>
-                  <td className="muted">{item.tin || "—"}</td>
-                  <td>{item.businessType || "—"}</td>
-                  <td className="num">{formatBirr(item.lastYearTax)}</td>
-                  <td className="num">{formatBirr(item.turnover)}</td>
-                  <td className="num">{formatBirr(item.taxBefore)}</td>
-                  <td className="num">{formatBirr(item.salesWith)}</td>
-                  <td className="num">{formatBirr(item.taxWith)}</td>
-                  <td className="num">{formatBirr(item.garaagaruma)}</td>
-                  <td className="num" style={{ fontWeight: 700 }}>
-                    {formatBirr(item.taaksiiBara2018)}
-                  </td>
-                  <td className="col-action no-print">
-                    <button
-                      className="row-share"
-                      title={t("common.share")}
-                      aria-label={t("common.share")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        share(item);
-                      }}
-                    >
-                      {copiedId === item.id ? "✓" : "🔗"}
-                    </button>
-                  </td>
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th className="col-action no-print" aria-hidden="true"></th>
+                  <th>{t("table.tl")}</th>
+                  <th>{t("table.name")}</th>
+                  <th>{t("table.tin")}</th>
+                  <th>{t("table.business")}</th>
+                  <th className="num">{t("table.lastyear_tax")}</th>
+                  <th className="num">{t("table.sales_before")}</th>
+                  <th className="num">{t("table.tax_before")}</th>
+                  <th className="num">{t("table.sales_with")}</th>
+                  <th className="num">{t("table.tax_with")}</th>
+                  <th className="num">{t("table.garaagaruma")}</th>
+                  <th className="num">{t("table.taaksii2018")}</th>
+                  <th className="col-action no-print" aria-hidden="true"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {items.map((item, i) => (
+                  <tr
+                    key={item.id}
+                    className={item.voided ? "row-voided" : item.locked ? "row-locked" : ""}
+                    onClick={() => navigate(`/analysis/${item.id}`)}
+                  >
+                    <td className="col-action no-print">
+                      {item.locked ? (
+                        canVoid && !item.voided ? (
+                          <button
+                            className="row-del"
+                            title={t("common.void")}
+                            aria-label={t("common.void")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              voidRow(item);
+                            }}
+                          >
+                            ⦸
+                          </button>
+                        ) : (
+                          <span className="lock-ico" title={t("common.locked")}>
+                            🔒
+                          </span>
+                        )
+                      ) : (
+                        <button
+                          className="row-del"
+                          title={t("common.delete")}
+                          aria-label={t("common.delete")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            del(item);
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </td>
+                    <td className="muted">{total - (firstIndex + i)}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {item.name || t("common.untitled")}
+                      {item.voided && (
+                        <span className="badge-void"> {t("common.voided")}</span>
+                      )}
+                    </td>
+                    <td className="muted">{item.tin || "—"}</td>
+                    <td>{item.businessType || "—"}</td>
+                    <td className="num">{formatBirr(item.lastYearTax)}</td>
+                    <td className="num">{formatBirr(item.base)}</td>
+                    <td className="num">{formatBirr(item.taxBefore)}</td>
+                    <td className="num">{formatBirr(item.salesWith)}</td>
+                    <td className="num">{formatBirr(item.taxWith)}</td>
+                    <td className="num">{formatBirr(item.garaagaruma)}</td>
+                    <td className="num" style={{ fontWeight: 700 }}>
+                      {formatBirr(item.taaksiiBara2018)}
+                    </td>
+                    <td className="col-action no-print">
+                      <button
+                        className="row-share"
+                        title={t("common.print_card")}
+                        aria-label={t("common.print_card")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          printRow(item);
+                        }}
+                      >
+                        🖨
+                      </button>
+                      <button
+                        className="row-share"
+                        title={t("common.share")}
+                        aria-label={t("common.share")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          share(item);
+                        }}
+                      >
+                        {copiedId === item.id ? "✓" : "🔗"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {pageCount > 1 && (
+            <div className="pager no-print">
+              <button
+                className="btn secondary"
+                disabled={page === 0}
+                onClick={() => setPage(page - 1)}
+              >
+                ← {t("common.prev")}
+              </button>
+              <span className="muted small">
+                {t("common.page_of", {
+                  page: String(page + 1),
+                  total: String(pageCount),
+                })}
+              </span>
+              <button
+                className="btn secondary"
+                disabled={page >= pageCount - 1}
+                onClick={() => setPage(page + 1)}
+              >
+                {t("common.next")} →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   );
