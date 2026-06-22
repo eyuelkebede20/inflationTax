@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
+import Shared from "./pages/Shared";
+import ChatWidget from "./components/ChatWidget";
 import { useAuth } from "./hooks/AuthContext";
 import { useT } from "./lib/i18n";
 
@@ -24,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/analysis/:id" element={<Analysis />} />
+        <Route path="/shared" element={<Shared />} />
         <Route path="/profile" element={<Profile />} />
         <Route
           path="/login"
@@ -59,7 +62,20 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <footer className="footer">{t("footer.tag")}</footer>
+      <ChatWidget />
+      <footer className="footer no-print">
+        <div>{t("footer.tag")}</div>
+        <div className="credit">
+          © {new Date().getFullYear()} · Made by{" "}
+          <a
+            href="https://senaycreatives.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            senaycreatives.com
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

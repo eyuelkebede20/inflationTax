@@ -118,6 +118,32 @@ const en: Dict = {
 
   "common.err_load": "Failed to load history.",
   "common.err_save": "Failed to save calculation.",
+  "common.delete": "Delete",
+  "common.delete_confirm": "Delete this entry?",
+  "common.print": "Print",
+  "common.share": "Share",
+  "common.copied": "Link copied to clipboard",
+  "common.search": "Search name, TIN, business…",
+  "common.filter_all": "All",
+  "common.filter_service": "Service",
+  "common.filter_nonservice": "Non-service",
+  "common.no_match": "No entries match your search.",
+
+  "shared.title": "Shared analysis",
+  "shared.invalid": "This shared link is invalid or incomplete.",
+  "shared.open_app": "Open InflaTax →",
+
+  "chat.title": "Ask InflaTax",
+  "chat.placeholder": "Ask about the tax, inflation, or how to use this…",
+  "chat.send": "Send",
+  "chat.intro":
+    "Hi! Ask me anything about this calculator — the curfew rate, TOT, profit tax, inflation, or how a number was reached.",
+  "chat.error": "Something went wrong. Please try again.",
+  "chat.not_configured":
+    "The assistant isn't set up yet. Add a GEMINI_API_KEY to enable it.",
+  "chat.thinking": "Thinking…",
+
+  "print.subtitle": "Curfew + inflation tax — Schedule B",
 
   "auth.signin": "Sign in",
   "auth.create_account": "Create account",
@@ -244,6 +270,32 @@ const am: Dict = {
 
   "common.err_load": "ታሪክን መጫን አልተሳካም።",
   "common.err_save": "ስሌቱን ማስቀመጥ አልተሳካም።",
+  "common.delete": "ሰርዝ",
+  "common.delete_confirm": "ይህን ግቤት ሰርዝ?",
+  "common.print": "አትም",
+  "common.share": "አጋራ",
+  "common.copied": "ሊንኩ ተቀድቷል",
+  "common.search": "ስም፣ TIN፣ ንግድ ፈልግ…",
+  "common.filter_all": "ሁሉም",
+  "common.filter_service": "አገልግሎት",
+  "common.filter_nonservice": "አገልግሎት ያልሆነ",
+  "common.no_match": "ከፍለጋህ ጋር የሚዛመድ ግቤት የለም።",
+
+  "shared.title": "የተጋራ ትንታኔ",
+  "shared.invalid": "ይህ የተጋራ ሊንክ ልክ ያልሆነ ወይም ያልተሟላ ነው።",
+  "shared.open_app": "InflaTax ክፈት →",
+
+  "chat.title": "InflaTax ጠይቅ",
+  "chat.placeholder": "ስለ ግብሩ፣ ግሽበቱ ወይም አጠቃቀሙ ጠይቅ…",
+  "chat.send": "ላክ",
+  "chat.intro":
+    "ሰላም! ስለዚህ ማስያ ማንኛውንም ጠይቀኝ — የከርሰ-ምሽት መጣኔ፣ TOT፣ የትርፍ ግብር፣ ግሽበት ወይም አንድ ቁጥር እንዴት እንደተገኘ።",
+  "chat.error": "የሆነ ችግር ተፈጥሯል። እባክህ እንደገና ሞክር።",
+  "chat.not_configured":
+    "ረዳቱ ገና አልተዘጋጀም። ለማስቻል GEMINI_API_KEY አክል።",
+  "chat.thinking": "በማሰብ ላይ…",
+
+  "print.subtitle": "የከርሰ-ምሽት + ግሽበት ግብር — ሰንጠረዥ B",
 
   "auth.signin": "ግባ",
   "auth.create_account": "መለያ ፍጠር",
@@ -371,6 +423,32 @@ const om: Dict = {
 
   "common.err_load": "Seenaa fe'uun hin milkoofne.",
   "common.err_save": "Shallaggii olkaa'uun hin milkoofne.",
+  "common.delete": "Haqi",
+  "common.delete_confirm": "Galmee kana haquu?",
+  "common.print": "Maxxansi",
+  "common.share": "Qoodi",
+  "common.copied": "Liinkiin garagalfame",
+  "common.search": "Maqaa, TIN, daldala barbaadi…",
+  "common.filter_all": "Hunda",
+  "common.filter_service": "Tajaajila",
+  "common.filter_nonservice": "Tajaajila miti",
+  "common.no_match": "Galmeen barbaacha kee waliin walsimu hin jiru.",
+
+  "shared.title": "Xiinxala qoodame",
+  "shared.invalid": "Liinkiin qoodame kun sirrii miti yookiin guutuu miti.",
+  "shared.open_app": "InflaTax bani →",
+
+  "chat.title": "InflaTax gaafadhu",
+  "chat.placeholder": "Waa'ee taaksii, dhiibbaa gatii, yookiin akkaataa itti fayyadamaa gaafadhu…",
+  "chat.send": "Ergi",
+  "chat.intro":
+    "Akkam! Waa'ee shallagaa kanaa waan barbaadde na gaafadhu — saffisa sadarkaa, TOT, taaksii bu'aa, dhiibbaa gatii, yookiin akkaataa lakkoofsi tokko itti argame.",
+  "chat.error": "Wanti tokko dogoggore. Maaloo irra deebi'ii yaali.",
+  "chat.not_configured":
+    "Gargaaraan ammatti hin qophoofne. Dandeessisuuf GEMINI_API_KEY dabali.",
+  "chat.thinking": "Yaadaa jira…",
+
+  "print.subtitle": "Taaksii sadarkaa + dhiibbaa gatii — Gabatee B",
 
   "auth.signin": "Seeni",
   "auth.create_account": "Herrega uumi",

@@ -187,6 +187,19 @@ export async function saveCalculation(
   return item;
 }
 
+export async function deleteCalculation(
+  userId: string | null,
+  id: string
+): Promise<void> {
+  if (userId && supabase) {
+    const { error } = await supabase.from("calculations").delete().eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  const items = readLocalHistory().filter((h) => h.id !== id);
+  writeLocalHistory(items);
+}
+
 export async function resetHistory(userId: string | null): Promise<void> {
   if (userId && supabase) {
     const { error } = await supabase

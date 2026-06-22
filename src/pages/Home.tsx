@@ -3,7 +3,12 @@ import DataInput, { type EntryMeta } from "../components/DataInput";
 import HistoryList from "../components/HistoryList";
 import { useAuth } from "../hooks/AuthContext";
 import { useSettings } from "../hooks/useSettings";
-import { getHistory, saveCalculation, type HistoryItem } from "../lib/storage";
+import {
+  deleteCalculation,
+  getHistory,
+  saveCalculation,
+  type HistoryItem,
+} from "../lib/storage";
 import type { CalcResult } from "../lib/calc";
 import { formatBirr, formatBirrDelta, formatRate } from "../lib/format";
 import { useT } from "../lib/i18n";
@@ -44,6 +49,17 @@ export default function Home() {
       setError(t("common.err_save"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    const prev = history;
+    setHistory((h) => h.filter((it) => it.id !== id));
+    try {
+      await deleteCalculation(userId, id);
+    } catch {
+      setHistory(prev); // revert on failure
+      setError(t("common.err_save"));
     }
   }
 
@@ -114,7 +130,11 @@ export default function Home() {
             {userId ? t("common.saved_account") : t("common.saved_device")}
           </span>
         </div>
-        <HistoryList items={history} loading={loadingHistory} />
+        <HistoryList
+          items={history}
+          loading={loadingHistory}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );
