@@ -102,12 +102,15 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
           </label>
         </div>
 
-        <label className="check-field">
-          <input
-            type="checkbox"
-            checked={isService}
-            onChange={(e) => setIsService(e.target.checked)}
-          />
+        <label className="toggle-field">
+          <span className="toggle">
+            <input
+              type="checkbox"
+              checked={isService}
+              onChange={(e) => setIsService(e.target.checked)}
+            />
+            <span className="slider" />
+          </span>
           <span>{t("form.is_service")}</span>
         </label>
 
