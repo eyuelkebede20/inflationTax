@@ -107,6 +107,30 @@ h3 {
   align-items: center;
   gap: 8px;
 }
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0c1426;
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background 0.12s, color 0.12s;
+}
+.lang-btn:hover {
+  color: var(--text);
+}
+.lang-btn.active {
+  background: var(--brand);
+  color: #042f2b;
+}
 
 /* ---- Cards ---- */
 .card {

@@ -2,41 +2,54 @@
 // Calculation engine. Pure functions only. No rounding inside the math —
 // round only for display (see lib/format.ts).
 //
-// Idea: a taxpayer with a taxable amount pays TWO taxes:
-//   1) Profit tax  — Schedule-C IF-formula bracket tax.
-//   2) Curfew tax  — proclamation schedule rate (2-9%) x amount.
-// Inflation inflates the nominal amount (x (1 + rate)), pushing it into higher
-// brackets, so the same real income costs MORE tax this year (bracket creep).
-// We compute both taxes for the base amount and the inflated amount, and the
-// extra paid this year.
+// Model (Taaksii Kafalaa Gibiraa Sadarkaa "B"):
+//   Last year's tax  = TOT + profit tax, where
+//       TOT          = turnover * totRate          (services 10%, adjustable)
+//       taxable profit = turnover * profitMargin   (default 10%, adjustable)
+//       profit tax   = profitTax(taxable profit)   (Schedule-C IF formula)
+//   Curfew flow (proclamation schedule rate, 2-9%):
+//       taxBefore    = turnover * curfew(turnover)
+//       salesWith    = turnover * (1 + inflationRate)
+//       taxWith      = salesWith * curfew(salesWith)
+//       garaagaruma  = taxWith - taxBefore
+//   Taaksii Bara 2018 = lastYearTax + garaagaruma
 // ---------------------------------------------------------------------------
 
-export interface CalcResult {
-  taxable: number; // base taxable amount (before inflation)
+export interface CalcConfig {
   inflationRate: number;
-  inflatedAmount: number; // taxable * (1 + inflationRate)
+  totRate: number;
+  profitMargin: number;
+}
 
-  // Before inflation
-  profitTaxBase: number;
-  curfewRateBase: number;
-  curfewBase: number;
-  totalBase: number;
+export interface CalcResult {
+  // inputs / config
+  turnover: number; // taxable income / gross (e.g. 450,000)
+  inflationRate: number;
+  totRate: number;
+  profitMargin: number;
 
-  // With inflation (this year)
-  profitTaxInfl: number;
-  curfewRateInfl: number;
-  curfewInfl: number;
-  totalInfl: number;
+  // last year's tax build-up
+  profitBase: number; // turnover * profitMargin
+  profitTaxAmt: number; // profitTax(profitBase)
+  tot: number; // turnover * totRate
+  lastYearTax: number; // tot + profitTaxAmt (or a manual override)
+  lastYearTaxManual: boolean; // true when the tax was entered, not derived
 
-  // Inflation-driven increases (extra paid this year)
-  profitTaxDiff: number;
-  curfewDiff: number;
-  totalDiff: number;
+  // curfew flow
+  curfewRateBefore: number;
+  taxBefore: number;
+  salesWith: number;
+  curfewRateWith: number;
+  taxWith: number;
+  garaagaruma: number;
+
+  // result
+  taaksiiBara2018: number;
 }
 
 /**
  * Profit tax (Schedule-C bracket formula), translated directly from the
- * spreadsheet IF formula.
+ * spreadsheet IF formula. g is the taxable income.
  */
 export function profitTax(g: number): number {
   if (g <= 7200) return 0;
@@ -60,39 +73,99 @@ export function scheduleRate(amount: number): number {
   return 0.09; // 1,500,001 and above
 }
 
+/** Last year's tax derived from turnover: TOT + profit tax. */
+export function lastYearTaxFromTurnover(turnover: number, cfg: CalcConfig): number {
+  const tot = turnover * cfg.totRate;
+  const profitTaxAmt = profitTax(turnover * cfg.profitMargin);
+  return tot + profitTaxAmt;
+}
+
+/**
+ * Inverse: given last year's tax, back-solve the turnover (Route 2). The
+ * forward function is monotonically increasing, so bisection is exact enough.
+ */
+export function turnoverFromTax(tax: number, cfg: CalcConfig): number {
+  if (tax <= 0) return 0;
+  let lo = 0;
+  let hi = 1;
+  // grow upper bound until it exceeds the target
+  while (lastYearTaxFromTurnover(hi, cfg) < tax && hi < 1e12) hi *= 2;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (lastYearTaxFromTurnover(mid, cfg) < tax) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/**
+ * Compute a full result. Provide a turnover and/or a known last-year tax:
+ *  - turnover only          -> last-year tax is derived (TOT + profit tax)
+ *  - tax only               -> turnover is back-solved from the tax (Route 2)
+ *  - both                   -> turnover drives the curfew; the typed tax wins
+ */
 export function computeResult(
-  taxable: number,
-  inflationRate: number
+  cfg: CalcConfig,
+  input: { turnover?: number; lastYearTax?: number }
 ): CalcResult {
-  const inflatedAmount = taxable * (1 + inflationRate);
+  const hasTurnover =
+    input.turnover != null && Number.isFinite(input.turnover);
+  const hasTax = input.lastYearTax != null && Number.isFinite(input.lastYearTax);
 
-  // Before inflation
-  const profitTaxBase = profitTax(taxable);
-  const curfewRateBase = scheduleRate(taxable);
-  const curfewBase = taxable * curfewRateBase;
-  const totalBase = profitTaxBase + curfewBase;
+  let turnover: number;
+  let lastYearTax: number;
+  let lastYearTaxManual: boolean;
 
-  // With inflation
-  const profitTaxInfl = profitTax(inflatedAmount);
-  const curfewRateInfl = scheduleRate(inflatedAmount);
-  const curfewInfl = inflatedAmount * curfewRateInfl;
-  const totalInfl = profitTaxInfl + curfewInfl;
+  if (hasTurnover) {
+    turnover = input.turnover!;
+    if (hasTax) {
+      lastYearTax = input.lastYearTax!;
+      lastYearTaxManual = true;
+    } else {
+      lastYearTax = lastYearTaxFromTurnover(turnover, cfg);
+      lastYearTaxManual = false;
+    }
+  } else if (hasTax) {
+    turnover = turnoverFromTax(input.lastYearTax!, cfg);
+    lastYearTax = input.lastYearTax!;
+    lastYearTaxManual = true;
+  } else {
+    turnover = 0;
+    lastYearTax = 0;
+    lastYearTaxManual = false;
+  }
+
+  const profitBase = turnover * cfg.profitMargin;
+  const profitTaxAmt = profitTax(profitBase);
+  const tot = turnover * cfg.totRate;
+
+  const curfewRateBefore = scheduleRate(turnover);
+  const taxBefore = turnover * curfewRateBefore;
+
+  const salesWith = turnover * (1 + cfg.inflationRate);
+  const curfewRateWith = scheduleRate(salesWith);
+  const taxWith = salesWith * curfewRateWith;
+
+  const garaagaruma = taxWith - taxBefore;
+  const taaksiiBara2018 = lastYearTax + garaagaruma;
 
   return {
-    taxable,
-    inflationRate,
-    inflatedAmount,
-    profitTaxBase,
-    curfewRateBase,
-    curfewBase,
-    totalBase,
-    profitTaxInfl,
-    curfewRateInfl,
-    curfewInfl,
-    totalInfl,
-    profitTaxDiff: profitTaxInfl - profitTaxBase,
-    curfewDiff: curfewInfl - curfewBase,
-    totalDiff: totalInfl - totalBase,
+    turnover,
+    inflationRate: cfg.inflationRate,
+    totRate: cfg.totRate,
+    profitMargin: cfg.profitMargin,
+    profitBase,
+    profitTaxAmt,
+    tot,
+    lastYearTax,
+    lastYearTaxManual,
+    curfewRateBefore,
+    taxBefore,
+    salesWith,
+    curfewRateWith,
+    taxWith,
+    garaagaruma,
+    taaksiiBara2018,
   };
 }
 

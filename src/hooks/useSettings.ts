@@ -1,25 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
-import { getInflationRate, setInflationRate } from "../lib/storage";
-import { DEFAULT_INFLATION_RATE } from "../config";
+import {
+  getSettings,
+  setSettings as persistSettings,
+  DEFAULT_SETTINGS,
+  type AppSettings,
+} from "../lib/storage";
 import { useAuth } from "./AuthContext";
 
 export function useSettings() {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
 
-  const [inflationRate, setRate] = useState<number>(DEFAULT_INFLATION_RATE);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     let active = true;
     setLoading(true);
-    getInflationRate(userId)
-      .then((r) => {
-        if (active) setRate(r);
+    getSettings(userId)
+      .then((s) => {
+        if (active) setSettings(s);
       })
       .catch(() => {
-        if (active) setRate(DEFAULT_INFLATION_RATE);
+        if (active) setSettings(DEFAULT_SETTINGS);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -29,13 +33,13 @@ export function useSettings() {
     };
   }, [userId, authLoading]);
 
-  const updateRate = useCallback(
-    async (rate: number) => {
-      await setInflationRate(userId, rate);
-      setRate(rate);
+  const update = useCallback(
+    async (next: AppSettings) => {
+      await persistSettings(userId, next);
+      setSettings(next);
     },
     [userId]
   );
 
-  return { inflationRate, updateRate, loading };
+  return { settings, update, loading };
 }

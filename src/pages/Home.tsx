@@ -1,26 +1,24 @@
 import { useEffect, useState } from "react";
-import DataInput from "../components/DataInput";
+import DataInput, { type EntryMeta } from "../components/DataInput";
 import HistoryList from "../components/HistoryList";
 import { useAuth } from "../hooks/AuthContext";
 import { useSettings } from "../hooks/useSettings";
-import {
-  getHistory,
-  saveCalculation,
-  type HistoryItem,
-} from "../lib/storage";
+import { getHistory, saveCalculation, type HistoryItem } from "../lib/storage";
 import type { CalcResult } from "../lib/calc";
 import { formatBirr, formatBirrDelta, formatRate } from "../lib/format";
+import { useT } from "../lib/i18n";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
-  const { inflationRate, loading: settingsLoading } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
+  const { t } = useT();
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<CalcResult | null>(null);
+  const [last, setLast] = useState<CalcResult | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -35,12 +33,12 @@ export default function Home() {
     };
   }, [userId, authLoading]);
 
-  async function handleCalculated(result: CalcResult, businessType: string | null) {
+  async function handleCalculated(result: CalcResult, meta: EntryMeta) {
     setError(null);
-    setLastResult(result);
+    setLast(result);
     setSaving(true);
     try {
-      const saved = await saveCalculation(userId, result, businessType);
+      const saved = await saveCalculation(userId, result, meta);
       setHistory((prev) => [saved, ...prev]);
     } catch (e) {
       setError((e as Error).message ?? "Failed to save calculation.");
@@ -52,65 +50,59 @@ export default function Home() {
   return (
     <div className="container">
       <div className="hero">
-        <h1>How much more tax inflation costs you.</h1>
-        <p>
-          Enter a taxable amount. InflaTax computes the profit tax and curfew tax
-          on it, inflates it by the current rate, and shows the extra tax you owe
-          this year from bracket creep.
-        </p>
+        <h1>{t("home.title")}</h1>
+        <p>{t("home.subtitle")}</p>
       </div>
 
       {error && <div className="alert error">{error}</div>}
 
       <DataInput
-        inflationRate={inflationRate}
+        config={settings}
         onCalculated={handleCalculated}
         saving={saving || settingsLoading}
       />
 
-      {lastResult && (
+      {last && (
         <div className="card">
-          <h2>Latest result</h2>
+          <h2>{t("home.latest")}</h2>
           <div className="result-cards">
             <div className="result-card">
-              <div className="k">Profit tax (before)</div>
-              <div className="result-big">
-                {formatBirr(lastResult.profitTaxBase)}
-              </div>
+              <div className="k">{t("result.lastyear_tax")}</div>
+              <div className="result-big">{formatBirr(last.lastYearTax)}</div>
             </div>
             <div className="result-card">
-              <div className="k">Curfew tax (before)</div>
-              <div className="result-big">
-                {formatBirr(lastResult.curfewBase)}
-              </div>
+              <div className="k">{t("result.tax_before")}</div>
+              <div className="result-big">{formatBirr(last.taxBefore)}</div>
               <div className="muted small">
-                {formatRate(lastResult.curfewRateBase)} rate
+                {formatRate(last.curfewRateBefore)}
               </div>
             </div>
             <div className="result-card">
-              <div className="k">Total with inflation</div>
-              <div className="result-big">
-                {formatBirr(lastResult.totalInfl)}
+              <div className="k">{t("result.tax_with")}</div>
+              <div className="result-big">{formatBirr(last.taxWith)}</div>
+              <div className="muted small">
+                {formatRate(last.curfewRateWith)}
               </div>
             </div>
             <div className="result-card" style={{ borderColor: "var(--brand)" }}>
-              <div className="k">Extra paid this year</div>
-              <div className="result-big delta-up">
-                {formatBirrDelta(lastResult.totalDiff)}
+              <div className="k">{t("result.taaksii2018")}</div>
+              <div className="result-big">{formatBirr(last.taaksiiBara2018)}</div>
+              <div className="muted small delta-up">
+                {formatBirrDelta(last.garaagaruma)}
               </div>
             </div>
           </div>
           <p className="muted small" style={{ marginBottom: 0 }}>
-            Click the row in History below for the full before/after breakdown.
+            {t("home.click_row")}
           </p>
         </div>
       )}
 
       <div className="card">
         <div className="section-title">
-          <h2 style={{ margin: 0 }}>History</h2>
+          <h2 style={{ margin: 0 }}>{t("home.history")}</h2>
           <span className="muted small">
-            {userId ? "Saved to your account" : "Saved on this device"}
+            {userId ? t("common.saved_account") : t("common.saved_device")}
           </span>
         </div>
         <HistoryList items={history} loading={loadingHistory} />

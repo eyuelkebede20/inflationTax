@@ -8,6 +8,7 @@ import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import { useAuth } from "./hooks/AuthContext";
+import { useT } from "./lib/i18n";
 
 /** Auth routes only make sense when Supabase is configured. */
 function AuthOnly({ children }: { children: JSX.Element }) {
@@ -16,6 +17,7 @@ function AuthOnly({ children }: { children: JSX.Element }) {
 }
 
 export default function App() {
+  const { t } = useT();
   return (
     <div className="app-shell">
       <Nav />
@@ -57,9 +59,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <footer className="footer">
-        InflaTax · profit tax + curfew tax, and how inflation raises both
-      </footer>
+      <footer className="footer">{t("footer.tag")}</footer>
     </div>
   );
 }

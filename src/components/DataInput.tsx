@@ -1,42 +1,72 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { computeResult, type CalcResult } from "../lib/calc";
+import { computeResult, type CalcConfig, type CalcResult } from "../lib/calc";
 import { formatRate } from "../lib/format";
+import { useT } from "../lib/i18n";
+
+export interface EntryMeta {
+  name: string | null;
+  tin: string | null;
+  businessType: string | null;
+}
 
 interface Props {
-  inflationRate: number;
-  onCalculated: (result: CalcResult, businessType: string | null) => void;
+  config: CalcConfig;
+  onCalculated: (result: CalcResult, meta: EntryMeta) => void;
   saving: boolean;
 }
 
-export default function DataInput({ inflationRate, onCalculated, saving }: Props) {
+export default function DataInput({ config, onCalculated, saving }: Props) {
+  const { t } = useT();
+  const [name, setName] = useState("");
+  const [tin, setTin] = useState("");
   const [businessType, setBusinessType] = useState("");
-  const [taxable, setTaxable] = useState("");
+  const [turnover, setTurnover] = useState("");
+  const [lastYearTax, setLastYearTax] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function handleCalculate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const value = Number(taxable);
-    if (taxable.trim() === "" || !Number.isFinite(value) || value < 0) {
-      setError("Enter a valid (non-negative) taxable amount.");
+    const hasTurnover = turnover.trim() !== "";
+    const hasTax = lastYearTax.trim() !== "";
+    if (!hasTurnover && !hasTax) {
+      setError(t("form.err_need_input"));
       return;
     }
 
-    const result = computeResult(value, inflationRate);
-    onCalculated(result, businessType.trim() || null);
+    const tv = Number(turnover);
+    const lv = Number(lastYearTax);
+    if (
+      (hasTurnover && (!Number.isFinite(tv) || tv < 0)) ||
+      (hasTax && (!Number.isFinite(lv) || lv < 0))
+    ) {
+      setError(t("form.err_invalid"));
+      return;
+    }
+
+    const result = computeResult(config, {
+      turnover: hasTurnover ? tv : undefined,
+      lastYearTax: hasTax ? lv : undefined,
+    });
+    onCalculated(result, {
+      name: name.trim() || null,
+      tin: tin.trim() || null,
+      businessType: businessType.trim() || null,
+    });
+    setName("");
+    setTin("");
     setBusinessType("");
-    setTaxable("");
+    setTurnover("");
+    setLastYearTax("");
   }
 
   return (
     <div className="card">
-      <h2>New entry</h2>
+      <h2>{t("form.new_entry")}</h2>
       <p className="muted small" style={{ marginTop: 0 }}>
-        Enter a taxable amount. InflaTax computes the profit tax and curfew tax
-        on it, then inflates it by the current rate to show how much more tax is
-        owed this year.
+        {t("form.help")}
       </p>
 
       <form onSubmit={handleCalculate}>
@@ -44,40 +74,69 @@ export default function DataInput({ inflationRate, onCalculated, saving }: Props
 
         <div className="row">
           <label className="field grow">
-            <span className="label">Business type (optional)</span>
+            <span className="label">{t("form.name")}</span>
             <input
               type="text"
-              placeholder="e.g. Retail shop"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="field grow">
+            <span className="label">{t("form.tin")}</span>
+            <input
+              type="text"
+              value={tin}
+              onChange={(e) => setTin(e.target.value)}
+            />
+          </label>
+          <label className="field grow">
+            <span className="label">{t("form.business_type")}</span>
+            <input
+              type="text"
               value={businessType}
               onChange={(e) => setBusinessType(e.target.value)}
             />
           </label>
+        </div>
 
+        <div className="row">
           <label className="field grow">
-            <span className="label">Taxable amount (Birr)</span>
+            <span className="label">{t("form.turnover")}</span>
             <input
               type="number"
               inputMode="decimal"
               step="any"
               min="0"
-              placeholder="e.g. 450000"
-              value={taxable}
-              onChange={(e) => setTaxable(e.target.value)}
+              placeholder="450000"
+              value={turnover}
+              onChange={(e) => setTurnover(e.target.value)}
               autoFocus
             />
           </label>
-
+          <label className="field grow">
+            <span className="label">{t("form.lastyear_tax")}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="0"
+              placeholder="50370"
+              value={lastYearTax}
+              onChange={(e) => setLastYearTax(e.target.value)}
+            />
+          </label>
           <div className="field">
             <button className="btn" type="submit" disabled={saving}>
-              {saving ? <span className="spinner" /> : "Calculate"}
+              {saving ? <span className="spinner" /> : t("common.calculate")}
             </button>
           </div>
         </div>
       </form>
 
-      <div className="pill" title="Change this in Settings">
-        Inflation rate in use: {formatRate(inflationRate)}{" "}
-        <Link to="/profile">change in Settings</Link>
+      <div className="pill">
+        {t("common.inflation_in_use")}: {formatRate(config.inflationRate)} · TOT{" "}
+        {formatRate(config.totRate)} · {formatRate(config.profitMargin)}{" "}
+        <Link to="/profile">{t("common.change_settings")}</Link>
       </div>
     </div>
   );

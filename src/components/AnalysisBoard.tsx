@@ -6,6 +6,7 @@ import {
   formatPct,
   formatRate,
 } from "../lib/format";
+import { useT } from "../lib/i18n";
 
 function DeltaCells({ base, current }: { base: number; current: number }) {
   const { abs, pct } = yoyChange(base, current);
@@ -46,137 +47,144 @@ function Bars({
 }
 
 export default function AnalysisBoard({ item }: { item: HistoryItem }) {
+  const { t } = useT();
   const chartMax = Math.max(
-    item.profitTaxBase,
-    item.profitTaxInfl,
-    item.curfewBase,
-    item.curfewInfl,
-    item.totalBase,
-    item.totalInfl,
+    item.taxBefore,
+    item.taxWith,
+    item.lastYearTax,
+    item.taaksiiBara2018,
     1
   );
 
   return (
     <div className="stack">
-      {/* Before vs with inflation */}
+      {/* Header */}
       <div className="card">
         <div className="section-title">
-          <h2 style={{ margin: 0 }}>{item.businessType || "Entry"}</h2>
+          <h2 style={{ margin: 0 }}>
+            {item.name || t("analysis.entry")}
+            {item.businessType ? ` · ${item.businessType}` : ""}
+          </h2>
           <span className="pill">
-            Inflation {formatRate(item.inflationRate)}
+            {t("common.inflation_in_use")} {formatRate(item.inflationRate)}
           </span>
         </div>
 
+        {/* Last year's tax build-up */}
+        <div className="result-cards">
+          <div className="result-card">
+            <div className="k">{t("analysis.turnover")}</div>
+            <div className="result-big">{formatBirr(item.turnover)}</div>
+          </div>
+          <div className="result-card">
+            <div className="k">{t("analysis.tot")}</div>
+            <div className="result-big">{formatBirr(item.tot)}</div>
+            <div className="muted small">{formatRate(item.totRate)}</div>
+          </div>
+          <div className="result-card">
+            <div className="k">{t("analysis.profit_tax")}</div>
+            <div className="result-big">{formatBirr(item.profitTaxAmt)}</div>
+            <div className="muted small">
+              {formatRate(item.profitMargin)} → {formatBirr(item.profitBase)}
+            </div>
+          </div>
+          <div className="result-card" style={{ borderColor: "var(--brand)" }}>
+            <div className="k">{t("analysis.buildup")}</div>
+            <div className="result-big">{formatBirr(item.lastYearTax)}</div>
+            <div className="muted small">
+              {item.lastYearTaxManual
+                ? t("result.entered")
+                : t("result.derived")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Before vs with inflation (curfew) */}
+      <div className="card">
+        <h2>{t("analysis.chart")}</h2>
         <div className="compare-grid">
-          <div className="head">Metric</div>
-          <div className="head num">Before inflation</div>
-          <div className="head num">With inflation</div>
-          <div className="head num">Δ (abs)</div>
-          <div className="head num col-delta">Δ (%)</div>
+          <div className="head">{t("analysis.metric")}</div>
+          <div className="head num">{t("analysis.before")}</div>
+          <div className="head num">{t("analysis.with")}</div>
+          <div className="head num">{t("analysis.delta_abs")}</div>
+          <div className="head num col-delta">{t("analysis.delta_pct")}</div>
 
-          {/* Taxable amount */}
-          <div className="rowlabel">Taxable amount</div>
-          <div className="num">{formatBirr(item.taxable)}</div>
-          <div className="num">{formatBirr(item.inflatedAmount)}</div>
-          <DeltaCells base={item.taxable} current={item.inflatedAmount} />
+          <div className="rowlabel">{t("analysis.turnover")}</div>
+          <div className="num">{formatBirr(item.turnover)}</div>
+          <div className="num">{formatBirr(item.salesWith)}</div>
+          <DeltaCells base={item.turnover} current={item.salesWith} />
 
-          {/* Profit tax */}
-          <div className="rowlabel">Profit tax</div>
-          <div className="num">{formatBirr(item.profitTaxBase)}</div>
-          <div className="num">{formatBirr(item.profitTaxInfl)}</div>
-          <DeltaCells base={item.profitTaxBase} current={item.profitTaxInfl} />
-
-          {/* Curfew rate */}
-          <div className="rowlabel">Curfew rate</div>
-          <div className="num">{formatRate(item.curfewRateBase)}</div>
-          <div className="num">{formatRate(item.curfewRateInfl)}</div>
+          <div className="rowlabel">{t("analysis.curfew_rate")}</div>
+          <div className="num">{formatRate(item.curfewRateBefore)}</div>
+          <div className="num">{formatRate(item.curfewRateWith)}</div>
           <div className="num muted">—</div>
           <div className="num muted col-delta">—</div>
 
-          {/* Curfew tax */}
-          <div className="rowlabel">Curfew tax</div>
-          <div className="num">{formatBirr(item.curfewBase)}</div>
-          <div className="num">{formatBirr(item.curfewInfl)}</div>
-          <DeltaCells base={item.curfewBase} current={item.curfewInfl} />
-
-          {/* Total */}
           <div className="rowlabel" style={{ fontWeight: 700 }}>
-            Total tax
+            {t("analysis.curfew_tax")}
           </div>
           <div className="num" style={{ fontWeight: 700 }}>
-            {formatBirr(item.totalBase)}
+            {formatBirr(item.taxBefore)}
           </div>
           <div className="num" style={{ fontWeight: 700 }}>
-            {formatBirr(item.totalInfl)}
+            {formatBirr(item.taxWith)}
           </div>
-          <DeltaCells base={item.totalBase} current={item.totalInfl} />
+          <DeltaCells base={item.taxBefore} current={item.taxWith} />
         </div>
 
-        {item.curfewRateInfl > item.curfewRateBase && (
+        {item.curfewRateWith > item.curfewRateBefore && (
           <div className="alert info" style={{ marginTop: 14, marginBottom: 0 }}>
-            Inflation pushed the curfew bracket from{" "}
-            {formatRate(item.curfewRateBase)} up to{" "}
-            {formatRate(item.curfewRateInfl)}.
+            {t("analysis.bracket_jump", {
+              a: formatRate(item.curfewRateBefore),
+              b: formatRate(item.curfewRateWith),
+            })}
           </div>
         )}
       </div>
 
-      {/* Extra paid this year */}
+      {/* Result build-up */}
       <div className="card">
-        <h2>Extra tax paid this year (due to inflation)</h2>
+        <h2>{t("analysis.result_title")}</h2>
         <div className="result-cards">
           <div className="result-card">
-            <div className="k">Extra profit tax</div>
-            <div className="result-big delta-up">
-              {formatBirrDelta(item.profitTaxDiff)}
-            </div>
+            <div className="k">{t("result.lastyear_tax")}</div>
+            <div className="result-big">{formatBirr(item.lastYearTax)}</div>
           </div>
           <div className="result-card">
-            <div className="k">Extra curfew tax</div>
+            <div className="k">{t("analysis.plus_diff")}</div>
             <div className="result-big delta-up">
-              {formatBirrDelta(item.curfewDiff)}
+              {formatBirrDelta(item.garaagaruma)}
             </div>
           </div>
           <div className="result-card" style={{ borderColor: "var(--brand)" }}>
-            <div className="k">Total extra this year</div>
-            <div className="result-big delta-up">
-              {formatBirrDelta(item.totalDiff)}
-            </div>
+            <div className="k">{t("result.taaksii2018")}</div>
+            <div className="result-big">{formatBirr(item.taaksiiBara2018)}</div>
           </div>
         </div>
-      </div>
 
-      {/* Chart */}
-      <div className="card">
-        <h2>Before vs with inflation</h2>
         <div className="chart">
           <Bars
-            label="Profit tax"
-            vBase={item.profitTaxBase}
-            vInfl={item.profitTaxInfl}
+            label={t("analysis.curfew_tax")}
+            vBase={item.taxBefore}
+            vInfl={item.taxWith}
             max={chartMax}
           />
           <Bars
-            label="Curfew tax"
-            vBase={item.curfewBase}
-            vInfl={item.curfewInfl}
-            max={chartMax}
-          />
-          <Bars
-            label="Total"
-            vBase={item.totalBase}
-            vInfl={item.totalInfl}
+            label={t("result.taaksii2018")}
+            vBase={item.lastYearTax}
+            vInfl={item.taaksiiBara2018}
             max={chartMax}
           />
         </div>
         <div className="legend">
           <span>
             <span className="swatch" style={{ background: "#0ea5e9" }} />
-            Before inflation
+            {t("analysis.before")}
           </span>
           <span>
             <span className="swatch" style={{ background: "#0f766e" }} />
-            With inflation
+            {t("analysis.with")}
           </span>
         </div>
       </div>

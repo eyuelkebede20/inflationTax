@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { supabase } from "../lib/supabase";
+import { LANGS, useT } from "../lib/i18n";
 
 export default function Nav() {
   const { user, enabled } = useAuth();
+  const { lang, setLang, t } = useT();
   const navigate = useNavigate();
 
   async function signOut() {
@@ -21,18 +23,29 @@ export default function Nav() {
           </span>
         </Link>
         <div className="nav-actions">
-          {/* Only one nav item per spec: Profile. */}
+          <div className="lang-switch" role="group" aria-label={t("profile.language")}>
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                className={`lang-btn${lang === l.code ? " active" : ""}`}
+                onClick={() => setLang(l.code)}
+                type="button"
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
           <Link className="btn secondary" to="/profile">
-            Profile
+            {t("nav.profile")}
           </Link>
           {enabled && user && (
             <button className="btn secondary" onClick={signOut}>
-              Sign out
+              {t("nav.signout")}
             </button>
           )}
           {enabled && !user && (
             <Link className="btn" to="/login">
-              Sign in
+              {t("nav.signin")}
             </Link>
           )}
         </div>
