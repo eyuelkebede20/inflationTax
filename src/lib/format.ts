@@ -11,6 +11,12 @@ export function formatBirr(value: number): string {
   return `${birrFormatter.format(value)} Birr`;
 }
 
+/** Compact money for dense tables: thousands + 2 decimals, no "Birr" suffix. */
+export function formatNum(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  return birrFormatter.format(value);
+}
+
 /** Rate as a percentage, e.g. 0.05 -> "5%". */
 export function formatRate(rate: number): string {
   if (!Number.isFinite(rate)) return "—";

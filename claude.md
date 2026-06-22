@@ -51,7 +51,9 @@ superadmin ──creates──> admin (= branch manager, owns one branch)
                                               └──creates──> entries
 ```
 - **superadmin** — creates/removes admins, sets global rates, sees everything
-  overall + the void feed. Has a **side dashboard** (`/superadmin`).
+  overall + the void feed. Has a **side dashboard** (`/superadmin`). Clicking an
+  admin opens that admin's sub-panel to **create/reset/remove their employees**
+  (so the superadmin can help an admin who can't).
 - **admin** — branch manager. Creates/removes employees, resets their passwords,
   **approves/rejects void requests**, sees a per-employee branch summary
   (`/admin`).
@@ -65,7 +67,10 @@ needs a server-side function using the Supabase service role.
 
 ## 5. Entry lifecycle: print → lock → void
 - Each history row has a **Print card** action → prints a single card in the
-  selected language, then **locks** the row (`locked`, `printed_at`).
+  selected language, **signed by** the creator (`ownerName`) with the transaction
+  **Ref** ID and a **QR code** (the self-contained share link, generated locally
+  via the lazy-loaded `qrcode` lib), then **locks** the row (`locked`,
+  `printed_at`). Entries store `owner_id` + `owner_name`.
 - Unlocked rows: the owner can delete them.
 - Locked rows are immutable. An employee can **request a void** (reason
   required) → pending. The branch **admin approves/rejects**. Approved → row
@@ -110,6 +115,12 @@ Indexes on `(user_id, created_at)` and `(branch_id, created_at)` for 100+ users.
   per-employee branch summary; superadmin **side dashboard**; entries carry their
   owner (`ownerName`); schema updated (`void_requests`, `request_void`/
   `decide_void`, `owner_name`).
+- **v3.1** (current) — fixed an Admin-dashboard infinite render loop; inputs
+  styled consistently (bare/search inputs); main history table fits with **no
+  horizontal scroll** (compact numbers, wrapped headers, smaller font); removed
+  the "Before vs with inflation" card. Superadmin can **drill into an admin** and
+  manage that admin's employees (shared `UserManager`). Every entry is **signed**
+  (owner + `owner_id`) and printed cards carry a **QR code** (lazy `qrcode`).
 
 ## 10. Known gaps / next
 - Flip `AUTH_ENABLED`; back `useRole()` with the `profiles` table; drop the dev

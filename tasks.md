@@ -79,6 +79,24 @@ user / admin / superadmin dashboards in nav (auth scaffolded but **commented** f
       RPCs, new RLS. **claude.md rewritten** as the living spec + changelog (v1→v3).
 - [x] build green.
 
+## Round 4 — fixes + superadmin drill-in + signed entries + QR
+- [x] **Fixed Admin dashboard infinite loop** (memoized `me`; getAccount returned
+      a new object each render → refresh effect looped → browser hung/crashed).
+- [x] Inputs styled consistently (CSS now covers bare + search inputs; added
+      `type="text"` in dashboards).
+- [x] Main history table: **no horizontal scroll** — compact numbers (no "Birr"),
+      wrapped headers, smaller font, fixed layout, wider action column.
+- [x] Removed the "Before vs with inflation" analysis card.
+- [x] **Superadmin → click an admin → manage that admin's employees** (shared
+      `UserManager`; create/reset/remove). AdminDashboard refactored onto it too.
+- [x] **Signed entries:** owner + transaction Ref ID on the printed card and the
+      on-screen analysis; `owner_id` added to storage map + schema.
+- [x] **QR code** on the printed card (self-contained share link, generated
+      locally via lazy-loaded `qrcode` — own chunk, main bundle unchanged).
+- [x] claude.md changelog → v3.1. build green.
+- note: 2 pre-existing npm advisories are dev-only (vite/esbuild dev server),
+      NOT from qrcode; fix needs a breaking vite 8 upgrade — left as-is.
+
 ## Remaining / follow-ups (not done this pass)
 - [ ] **Activate auth.** Flip `AUTH_ENABLED` in config.ts, wire `profiles` to a
       real `useRole()` (read signed-in user's role/branch), remove the dev switcher.

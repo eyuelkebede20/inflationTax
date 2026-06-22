@@ -53,6 +53,14 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
             {kindLabel} · {t("common.inflation_in_use")} {formatRate(item.inflationRate)}
           </span>
         </div>
+        {item.ownerName && (
+          <p className="muted small" style={{ marginTop: 6, marginBottom: 0 }}>
+            {t("card.signed_by")}: <strong>{item.ownerName}</strong> ·{" "}
+            <span style={{ fontFamily: "monospace" }}>
+              {t("card.ref")}: {item.id}
+            </span>
+          </p>
+        )}
 
         <div className="result-cards">
           <div className="result-card">

@@ -3,6 +3,7 @@ import { useSettings } from "../hooks/useSettings";
 import { useRole } from "../hooks/RoleContext";
 import {
   createAdmin,
+  getAccount,
   getAccounts,
   getAdmins,
   getBranchStats,
@@ -14,6 +15,7 @@ import {
   type StatRow,
   type VoidRequest,
 } from "../lib/storage";
+import UserManager from "../components/UserManager";
 import { formatBirr, formatDate, formatRate } from "../lib/format";
 import { useT } from "../lib/i18n";
 
@@ -27,6 +29,7 @@ export default function SuperAdminDashboard() {
   const { settings, update, loading: settingsLoading } = useSettings();
 
   const [section, setSection] = useState<Section>("overview");
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
   const [admins, setAdmins] = useState<Account[]>([]);
   const [stats, setStats] = useState<StatRow[]>([]);
   const [voids, setVoids] = useState<VoidRequest[]>([]);
@@ -188,7 +191,7 @@ export default function SuperAdminDashboard() {
             </>
           )}
 
-          {section === "admins" && (
+          {section === "admins" && !selectedAdminId && (
             <div className="card">
               <h2>{t("super.admins")}</h2>
               <p className="muted small" style={{ marginTop: 0 }}>
@@ -197,15 +200,15 @@ export default function SuperAdminDashboard() {
               <form onSubmit={addAdmin} className="row">
                 <label className="field grow">
                   <span className="label">{t("super.branch_name")}</span>
-                  <input value={aBranch} onChange={(e) => setABranch(e.target.value)} />
+                  <input type="text" value={aBranch} onChange={(e) => setABranch(e.target.value)} />
                 </label>
                 <label className="field grow">
                   <span className="label">{t("admin.username")}</span>
-                  <input value={aName} onChange={(e) => setAName(e.target.value)} />
+                  <input type="text" value={aName} onChange={(e) => setAName(e.target.value)} />
                 </label>
                 <label className="field grow">
                   <span className="label">{t("admin.fullname")}</span>
-                  <input value={aFull} onChange={(e) => setAFull(e.target.value)} />
+                  <input type="text" value={aFull} onChange={(e) => setAFull(e.target.value)} />
                 </label>
                 <label className="field grow">
                   <span className="label">{t("auth.password")}</span>
@@ -228,15 +231,25 @@ export default function SuperAdminDashboard() {
               ) : (
                 <ul className="branch-list">
                   {admins.map((a) => (
-                    <li key={a.id}>
+                    <li
+                      key={a.id}
+                      className="clickable"
+                      onClick={() => setSelectedAdminId(a.id)}
+                    >
                       <span>
                         <strong>{a.branchName}</strong> · {a.username}
                         <span className="muted small">
                           {" "}
-                          · {getUsersForManager(a.id).length} {t("super.users")}
+                          · {getUsersForManager(a.id).length} {t("super.users")} ›
                         </span>
                       </span>
-                      <button className="row-del" onClick={() => removeAdmin(a)}>
+                      <button
+                        className="row-del"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeAdmin(a);
+                        }}
+                      >
                         ✕
                       </button>
                     </li>
@@ -245,6 +258,41 @@ export default function SuperAdminDashboard() {
               )}
             </div>
           )}
+
+          {section === "admins" && selectedAdminId && (() => {
+            const admin = getAccount(selectedAdminId);
+            if (!admin) {
+              setSelectedAdminId(null);
+              return null;
+            }
+            return (
+              <div className="card">
+                <button
+                  className="linkbtn"
+                  style={{ marginBottom: 12 }}
+                  onClick={() => setSelectedAdminId(null)}
+                >
+                  {t("super.back_admins")}
+                </button>
+                <div className="section-title">
+                  <h2 style={{ margin: 0 }}>
+                    {t("super.sub_of", { branch: admin.branchName })}
+                  </h2>
+                  <span className="pill">{admin.username}</span>
+                </div>
+                <p className="muted small">
+                  {t("super.add_user_for", { admin: admin.username })}
+                </p>
+                <UserManager
+                  manager={admin}
+                  onChange={() => {
+                    refresh();
+                    reloadAccounts();
+                  }}
+                />
+              </div>
+            );
+          })()}
 
           {section === "settings" && (
             <div className="card">

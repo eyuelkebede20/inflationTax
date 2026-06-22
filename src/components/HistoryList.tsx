@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { HistoryItem } from "../lib/storage";
 import type { Role } from "../hooks/RoleContext";
-import { formatBirr } from "../lib/format";
+import { formatNum } from "../lib/format";
 import { buildShareUrl } from "../lib/share";
 import { printCard } from "../lib/printCard";
 import { useT } from "../lib/i18n";
@@ -76,6 +76,9 @@ export default function HistoryList(props: Props) {
       tax_with: t("table.tax_with"),
       garaagaruma: t("table.garaagaruma"),
       taaksii2018: t("table.taaksii2018"),
+      signed_by: t("card.signed_by"),
+      ref: t("card.ref"),
+      scan: t("card.scan"),
     });
     if (!item.locked) props.onPrinted(item.id);
   }
@@ -122,7 +125,7 @@ export default function HistoryList(props: Props) {
         <div className="empty">{search ? t("common.no_match") : t("table.empty")}</div>
       ) : (
         <>
-          <div style={{ overflowX: "auto" }}>
+          <div className="table-wrap">
             <table className="history-table">
               <thead>
                 <tr>
@@ -205,14 +208,14 @@ export default function HistoryList(props: Props) {
                     </td>
                     <td className="muted">{item.tin || "—"}</td>
                     <td>{item.businessType || "—"}</td>
-                    <td className="num">{formatBirr(item.lastYearTax)}</td>
-                    <td className="num">{formatBirr(item.base)}</td>
-                    <td className="num">{formatBirr(item.taxBefore)}</td>
-                    <td className="num">{formatBirr(item.salesWith)}</td>
-                    <td className="num">{formatBirr(item.taxWith)}</td>
-                    <td className="num">{formatBirr(item.garaagaruma)}</td>
+                    <td className="num">{formatNum(item.lastYearTax)}</td>
+                    <td className="num">{formatNum(item.base)}</td>
+                    <td className="num">{formatNum(item.taxBefore)}</td>
+                    <td className="num">{formatNum(item.salesWith)}</td>
+                    <td className="num">{formatNum(item.taxWith)}</td>
+                    <td className="num">{formatNum(item.garaagaruma)}</td>
                     <td className="num" style={{ fontWeight: 700 }}>
-                      {formatBirr(item.taaksiiBara2018)}
+                      {formatNum(item.taaksiiBara2018)}
                     </td>
                     <td className="col-action no-print">
                       <button

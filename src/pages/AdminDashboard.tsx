@@ -1,21 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useRole } from "../hooks/RoleContext";
 import {
   approveVoid,
-  createUser,
   getAccount,
   getEmployeeStats,
   getUsersForManager,
   getVoidRequests,
   rejectVoid,
-  removeAccount,
-  setPassword,
-  usernameTaken,
   type Account,
   type StatRow,
   type VoidRequest,
 } from "../lib/storage";
+import UserManager from "../components/UserManager";
 import { formatBirr, formatDate } from "../lib/format";
 import { useT } from "../lib/i18n";
 
@@ -23,15 +20,13 @@ import { useT } from "../lib/i18n";
 export default function AdminDashboard() {
   const { t } = useT();
   const { identity, role, branchId, reloadAccounts } = useRole();
-  const me = getAccount(identity.id);
+  // Memoise so `refresh` (and its effect) don't re-fire every render — getAccount
+  // returns a fresh object each call, which otherwise loops the page forever.
+  const me = useMemo(() => getAccount(identity.id), [identity.id]);
 
   const [team, setTeam] = useState<Account[]>([]);
   const [stats, setStats] = useState<StatRow[]>([]);
   const [voids, setVoids] = useState<VoidRequest[]>([]);
-  const [uName, setUName] = useState("");
-  const [uFull, setUFull] = useState("");
-  const [uPass, setUPass] = useState("");
-  const [err, setErr] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     if (!me) return;
@@ -48,43 +43,6 @@ export default function AdminDashboard() {
         <div className="card empty">{t("admin.need_admin")}</div>
       </div>
     );
-  }
-
-  function addUser(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    if (!uName.trim() || uPass.length < 4) {
-      setErr(t("admin.err_user"));
-      return;
-    }
-    if (usernameTaken(uName)) {
-      setErr(t("admin.err_dupe"));
-      return;
-    }
-    createUser(me!, { username: uName, password: uPass, fullName: uFull });
-    setUName("");
-    setUFull("");
-    setUPass("");
-    reloadAccounts();
-    refresh();
-  }
-
-  function resetPw(u: Account) {
-    const pw = window.prompt(t("admin.reset_prompt", { name: u.username }));
-    if (pw && pw.length >= 4) {
-      setPassword(u.id, pw);
-      window.alert(t("admin.reset_done"));
-    } else if (pw !== null) {
-      window.alert(t("admin.err_user"));
-    }
-  }
-
-  function remove(u: Account) {
-    if (window.confirm(t("admin.remove_confirm", { name: u.username }))) {
-      removeAccount(u.id);
-      reloadAccounts();
-      refresh();
-    }
   }
 
   function decide(v: VoidRequest, ok: boolean) {
@@ -129,53 +87,13 @@ export default function AdminDashboard() {
       {/* Team management */}
       <div className="card">
         <h2>{t("admin.team")}</h2>
-        <form onSubmit={addUser} className="row">
-          <label className="field grow">
-            <span className="label">{t("admin.username")}</span>
-            <input value={uName} onChange={(e) => setUName(e.target.value)} />
-          </label>
-          <label className="field grow">
-            <span className="label">{t("admin.fullname")}</span>
-            <input value={uFull} onChange={(e) => setUFull(e.target.value)} />
-          </label>
-          <label className="field grow">
-            <span className="label">{t("auth.password")}</span>
-            <input
-              type="password"
-              value={uPass}
-              onChange={(e) => setUPass(e.target.value)}
-            />
-          </label>
-          <div className="field">
-            <button className="btn" type="submit">
-              {t("admin.add_user")}
-            </button>
-          </div>
-        </form>
-        {err && <div className="alert error">{err}</div>}
-
-        {team.length === 0 ? (
-          <p className="muted small">{t("admin.no_team")}</p>
-        ) : (
-          <ul className="branch-list">
-            {team.map((u) => (
-              <li key={u.id}>
-                <span>
-                  <strong>{u.username}</strong>
-                  {u.fullName ? ` · ${u.fullName}` : ""}
-                </span>
-                <span style={{ display: "flex", gap: 8 }}>
-                  <button className="btn secondary" onClick={() => resetPw(u)}>
-                    {t("admin.reset_pw")}
-                  </button>
-                  <button className="row-del" onClick={() => remove(u)}>
-                    ✕
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <UserManager
+          manager={me}
+          onChange={() => {
+            reloadAccounts();
+            refresh();
+          }}
+        />
       </div>
 
       {/* Void requests */}

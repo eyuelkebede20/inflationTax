@@ -277,6 +277,14 @@ const en: Dict = {
   "super.admin_del_confirm": "Remove admin {name} and their {n} employees?",
   "super.err_admin": "Branch, username and a password of 4+ characters are required.",
   "super.voids_help": "Every void and request across all branches.",
+  "super.manage_users": "Manage employees",
+  "super.sub_of": "Employees of {branch}",
+  "super.back_admins": "← Back to admins",
+  "super.add_user_for": "Create employee under {admin}",
+
+  "card.signed_by": "Signed by",
+  "card.ref": "Ref",
+  "card.scan": "Scan to verify",
 };
 
 
@@ -543,6 +551,14 @@ const om: Dict = {
   "super.admin_del_confirm": "Bulchaa {name} fi hojjettoota {n} isaa haquu?",
   "super.err_admin": "Damee, maqaa fayyadamaa fi jecha iccitii qubee 4+ barbaachisa.",
   "super.voids_help": "Haqaa fi gaafannoo damee hunda keessaa.",
+  "super.manage_users": "Hojjettoota bulchi",
+  "super.sub_of": "Hojjettoota {branch}",
+  "super.back_admins": "← Gara bulchitootaatti deebi'i",
+  "super.add_user_for": "Hojjetaa {admin} jala uumi",
+
+  "card.signed_by": "Kan mallatteesse",
+  "card.ref": "Wabii",
+  "card.scan": "Mirkaneessuuf skaani",
 };
 
 const dicts: Record<Lang, Dict> = { en, om };

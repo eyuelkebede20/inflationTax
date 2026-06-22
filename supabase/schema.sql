@@ -83,6 +83,7 @@ create table public.calculations (
   tax_with numeric not null,          -- col I
   garaagaruma numeric not null,       -- col J = I - G
   taaksii_2018 numeric not null,      -- col K = E + J
+  owner_id text,                      -- reference to the signer (auth uid)
   owner_name text,                    -- employee who created the entry
   locked boolean not null default false,   -- fixed once printed
   printed_at timestamptz,

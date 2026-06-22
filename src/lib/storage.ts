@@ -120,6 +120,7 @@ interface DbRow {
   tin: string | null;
   business_type: string | null;
   branch_id: string | null;
+  owner_id: string | null;
   owner_name: string | null;
   kind: string;
   turnover: number;
@@ -148,7 +149,7 @@ function rowToItem(r: DbRow): HistoryItem {
     tin: r.tin,
     businessType: r.business_type,
     branchId: r.branch_id,
-    ownerId: null,
+    ownerId: r.owner_id,
     ownerName: r.owner_name,
     kind: r.kind === "rental" ? "rental" : "tax",
     turnover: Number(r.turnover),
@@ -177,6 +178,7 @@ function itemToInsert(userId: string, r: CalcResult, m: EntryMeta) {
     tin: m.tin,
     business_type: m.businessType,
     branch_id: m.branchId,
+    owner_id: m.ownerId ?? userId,
     owner_name: m.ownerName,
     kind: r.kind,
     turnover: r.turnover,
