@@ -26,6 +26,7 @@ create table public.calculations (
   inflation_rate numeric not null,
   tot_rate numeric not null,
   profit_margin numeric not null,
+  is_service boolean not null default true, -- TOT applies only to services
   profit_base numeric not null,           -- turnover * profit_margin
   profit_tax_amt numeric not null,        -- profitTax(profit_base)
   tot numeric not null,                   -- turnover * tot_rate

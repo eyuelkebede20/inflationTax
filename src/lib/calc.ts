@@ -27,6 +27,7 @@ export interface CalcResult {
   inflationRate: number;
   totRate: number;
   profitMargin: number;
+  isService: boolean; // TOT only applies to service businesses
 
   // last year's tax build-up
   profitBase: number; // turnover * profitMargin
@@ -73,9 +74,16 @@ export function scheduleRate(amount: number): number {
   return 0.09; // 1,500,001 and above
 }
 
-/** Last year's tax derived from turnover: TOT + profit tax. */
-export function lastYearTaxFromTurnover(turnover: number, cfg: CalcConfig): number {
-  const tot = turnover * cfg.totRate;
+/**
+ * Last year's tax derived from turnover: TOT + profit tax. TOT only applies to
+ * service businesses; for non-services it is dropped (0).
+ */
+export function lastYearTaxFromTurnover(
+  turnover: number,
+  cfg: CalcConfig,
+  isService: boolean
+): number {
+  const tot = isService ? turnover * cfg.totRate : 0;
   const profitTaxAmt = profitTax(turnover * cfg.profitMargin);
   return tot + profitTaxAmt;
 }
@@ -84,15 +92,19 @@ export function lastYearTaxFromTurnover(turnover: number, cfg: CalcConfig): numb
  * Inverse: given last year's tax, back-solve the turnover (Route 2). The
  * forward function is monotonically increasing, so bisection is exact enough.
  */
-export function turnoverFromTax(tax: number, cfg: CalcConfig): number {
+export function turnoverFromTax(
+  tax: number,
+  cfg: CalcConfig,
+  isService: boolean
+): number {
   if (tax <= 0) return 0;
   let lo = 0;
   let hi = 1;
   // grow upper bound until it exceeds the target
-  while (lastYearTaxFromTurnover(hi, cfg) < tax && hi < 1e12) hi *= 2;
+  while (lastYearTaxFromTurnover(hi, cfg, isService) < tax && hi < 1e12) hi *= 2;
   for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
-    if (lastYearTaxFromTurnover(mid, cfg) < tax) lo = mid;
+    if (lastYearTaxFromTurnover(mid, cfg, isService) < tax) lo = mid;
     else hi = mid;
   }
   return (lo + hi) / 2;
@@ -106,8 +118,9 @@ export function turnoverFromTax(tax: number, cfg: CalcConfig): number {
  */
 export function computeResult(
   cfg: CalcConfig,
-  input: { turnover?: number; lastYearTax?: number }
+  input: { turnover?: number; lastYearTax?: number; isService?: boolean }
 ): CalcResult {
+  const isService = input.isService ?? true;
   const hasTurnover =
     input.turnover != null && Number.isFinite(input.turnover);
   const hasTax = input.lastYearTax != null && Number.isFinite(input.lastYearTax);
@@ -122,11 +135,11 @@ export function computeResult(
       lastYearTax = input.lastYearTax!;
       lastYearTaxManual = true;
     } else {
-      lastYearTax = lastYearTaxFromTurnover(turnover, cfg);
+      lastYearTax = lastYearTaxFromTurnover(turnover, cfg, isService);
       lastYearTaxManual = false;
     }
   } else if (hasTax) {
-    turnover = turnoverFromTax(input.lastYearTax!, cfg);
+    turnover = turnoverFromTax(input.lastYearTax!, cfg, isService);
     lastYearTax = input.lastYearTax!;
     lastYearTaxManual = true;
   } else {
@@ -137,7 +150,7 @@ export function computeResult(
 
   const profitBase = turnover * cfg.profitMargin;
   const profitTaxAmt = profitTax(profitBase);
-  const tot = turnover * cfg.totRate;
+  const tot = isService ? turnover * cfg.totRate : 0;
 
   const curfewRateBefore = scheduleRate(turnover);
   const taxBefore = turnover * curfewRateBefore;
@@ -154,6 +167,7 @@ export function computeResult(
     inflationRate: cfg.inflationRate,
     totRate: cfg.totRate,
     profitMargin: cfg.profitMargin,
+    isService,
     profitBase,
     profitTaxAmt,
     tot,

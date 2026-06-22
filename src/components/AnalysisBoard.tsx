@@ -79,7 +79,11 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
           <div className="result-card">
             <div className="k">{t("analysis.tot")}</div>
             <div className="result-big">{formatBirr(item.tot)}</div>
-            <div className="muted small">{formatRate(item.totRate)}</div>
+            <div className="muted small">
+              {item.isService
+                ? formatRate(item.totRate)
+                : t("analysis.tot_dropped")}
+            </div>
           </div>
           <div className="result-card">
             <div className="k">{t("analysis.profit_tax")}</div>
@@ -161,6 +165,10 @@ export default function AnalysisBoard({ item }: { item: HistoryItem }) {
             <div className="k">{t("result.taaksii2018")}</div>
             <div className="result-big">{formatBirr(item.taaksiiBara2018)}</div>
           </div>
+        </div>
+
+        <div className="alert info" style={{ marginTop: 4 }}>
+          {t("analysis.result_note")}
         </div>
 
         <div className="chart">

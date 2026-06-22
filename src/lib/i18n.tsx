@@ -32,9 +32,12 @@ const en: Dict = {
   "common.saved_account": "Saved to your account",
   "common.saved_device": "Saved on this device",
 
-  "home.title": "How much more tax inflation costs you.",
+  "home.title": "Adjust last year's tax for inflation — fairly.",
   "home.subtitle":
-    "Enter a turnover (taxable income). InflaTax computes last year's tax (TOT + profit tax), then applies the curfew rate before and after inflation to find this year's tax — Taaksii Bara 2018.",
+    "A new flat \"curfew\" rate often charges far less than a business paid last year. So instead of resetting to the new rate, this year's tax keeps last year's tax and adds only the rise inflation brings to the curfew tax.",
+  "home.why_title": "Why this matters",
+  "home.why_body":
+    "Say Abebe paid 50,370 last year (TOT + profit tax). The new curfew rate alone might bill only ~9,000 — a steep drop in revenue. Instead, this year's tax = last year's tax + (curfew on the inflation-adjusted turnover − curfew on last year's turnover). The bill keeps pace with inflation and never falls below what was already paid.",
   "home.latest": "Latest result",
   "home.history": "History",
   "home.click_row": "Click a row below for the full breakdown.",
@@ -45,6 +48,7 @@ const en: Dict = {
   "form.name": "Taxpayer name",
   "form.tin": "TIN",
   "form.business_type": "Business type",
+  "form.is_service": "Service business (apply 10% TOT) — uncheck to drop TOT",
   "form.turnover": "Turnover / taxable income (Birr)",
   "form.lastyear_tax": "Last year's tax paid (optional)",
   "form.err_need_input": "Enter a turnover or a last year's tax.",
@@ -87,6 +91,9 @@ const en: Dict = {
   "analysis.result_title": "This year's tax (Taaksii Bara 2018)",
   "analysis.plus_diff": "+ Inflation difference",
   "analysis.chart": "Before vs with inflation",
+  "analysis.result_note":
+    "We don't reset to the new curfew rate — we keep last year's tax and add only the inflation difference.",
+  "analysis.tot_dropped": "Not a service — TOT dropped",
 
   "profile.title": "Profile",
   "profile.signed_in_as": "Signed in as {email}",
@@ -109,6 +116,32 @@ const en: Dict = {
   "profile.pw_updated": "Password updated.",
   "profile.language": "Language",
 
+  "common.err_load": "Failed to load history.",
+  "common.err_save": "Failed to save calculation.",
+
+  "auth.signin": "Sign in",
+  "auth.create_account": "Create account",
+  "auth.email": "Email",
+  "auth.password": "Password",
+  "auth.new_password": "New password",
+  "auth.no_account": "No account?",
+  "auth.have_account": "Already have an account?",
+  "auth.forgot": "Forgot password?",
+  "auth.continue_anon": "Continue without signing in →",
+  "auth.reset_title": "Reset password",
+  "auth.reset_help": "We'll email you a link to set a new password.",
+  "auth.send_reset": "Send reset link",
+  "auth.reset_sent": "Check your email for a password reset link.",
+  "auth.back_signin": "Back to sign in",
+  "auth.update_title": "Set a new password",
+  "auth.update_help": "Open this page from the link in your reset email.",
+  "auth.update_btn": "Update password",
+  "auth.updated": "Password updated. Redirecting…",
+  "auth.created": "Account created. Check your email to confirm, then sign in.",
+  "auth.import_local":
+    "Import calculations saved on this device into your account?",
+  "auth.pw_min": "Password must be at least 6 characters.",
+
   "footer.tag": "InflaTax · curfew + inflation tax calculator (Schedule B)",
 };
 
@@ -126,9 +159,12 @@ const am: Dict = {
   "common.saved_account": "በመለያህ ተቀምጧል",
   "common.saved_device": "በዚህ መሣሪያ ተቀምጧል",
 
-  "home.title": "የዋጋ ግሽበት ምን ያህል ተጨማሪ ግብር እንደሚያስከፍል።",
+  "home.title": "የአምናውን ግብር በዋጋ ግሽበት በፍትሐዊነት አስተካክል።",
   "home.subtitle":
-    "ጠቅላላ ሽያጭ (ታክስ የሚከፈልበት ገቢ) አስገባ። InflaTax የአምናውን ግብር (TOT + የትርፍ ግብር) አስልቶ የከርሰ-ምሽት መጣኔን ከግሽበት በፊትና በኋላ በመጠቀም የዘንድሮውን ግብር — Taaksii Bara 2018 — ያገኛል።",
+    "አዲሱ ቋሚ \"የከርሰ-ምሽት\" መጣኔ ብዙ ጊዜ ንግዱ አምና ከከፈለው በጣም ያንሳል። ስለዚህ ወደ አዲሱ መጣኔ ከመመለስ ይልቅ የዘንድሮ ግብር የአምናውን ግብር ይዞ የግሽበቱን ጭማሪ ብቻ ይጨምራል።",
+  "home.why_title": "ለምን ጠቃሚ ሆነ",
+  "home.why_body":
+    "ለምሳሌ አበበ አምና 50,370 ከፍሏል (TOT + የትርፍ ግብር)። አዲሱ የከርሰ-ምሽት መጣኔ ብቻውን ~9,000 ሊያስከፍል ይችላል — ትልቅ ቅናሽ። በምትኩ፣ የዘንድሮ ግብር = የአምና ግብር + (በግሽበት የተስተካከለ ሽያጭ ላይ ያለ ከርሰ-ምሽት − የአምና ሽያጭ ላይ ያለ ከርሰ-ምሽት)። ግብሩ ከግሽበት ጋር ይሄዳል እንጂ ከተከፈለው አያንስም።",
   "home.latest": "የቅርብ ውጤት",
   "home.history": "ታሪክ",
   "home.click_row": "ሙሉ ዝርዝር ለማየት ከታች ያለውን ረድፍ ጫን።",
@@ -139,6 +175,7 @@ const am: Dict = {
   "form.name": "የግብር ከፋይ ስም",
   "form.tin": "TIN",
   "form.business_type": "የንግድ ዓይነት",
+  "form.is_service": "የአገልግሎት ንግድ (10% TOT ይተገበራል) — ለሌላ አንሳ",
   "form.turnover": "ጠቅላላ ሽያጭ / ታክስ የሚከፈልበት ገቢ (ብር)",
   "form.lastyear_tax": "የአምና የተከፈለ ግብር (አማራጭ)",
   "form.err_need_input": "ጠቅላላ ሽያጭ ወይም የአምና ግብር አስገባ።",
@@ -181,6 +218,9 @@ const am: Dict = {
   "analysis.result_title": "የዘንድሮ ግብር (Taaksii Bara 2018)",
   "analysis.plus_diff": "+ የግሽበት ልዩነት",
   "analysis.chart": "ከግሽበት በፊት እና በኋላ",
+  "analysis.result_note":
+    "ወደ አዲሱ የከርሰ-ምሽት መጣኔ አንመለስም — የአምናውን ግብር ይዘን የግሽበቱን ልዩነት ብቻ እንጨምራለን።",
+  "analysis.tot_dropped": "አገልግሎት አይደለም — TOT ተትቷል",
 
   "profile.title": "መገለጫ",
   "profile.signed_in_as": "የገባኸው እንደ {email}",
@@ -202,6 +242,31 @@ const am: Dict = {
   "profile.pw_updated": "የይለፍ ቃል ተቀይሯል።",
   "profile.language": "ቋንቋ",
 
+  "common.err_load": "ታሪክን መጫን አልተሳካም።",
+  "common.err_save": "ስሌቱን ማስቀመጥ አልተሳካም።",
+
+  "auth.signin": "ግባ",
+  "auth.create_account": "መለያ ፍጠር",
+  "auth.email": "ኢሜይል",
+  "auth.password": "የይለፍ ቃል",
+  "auth.new_password": "አዲስ የይለፍ ቃል",
+  "auth.no_account": "መለያ የለህም?",
+  "auth.have_account": "መለያ አለህ?",
+  "auth.forgot": "የይለፍ ቃል ረሳህ?",
+  "auth.continue_anon": "ሳትገባ ቀጥል →",
+  "auth.reset_title": "የይለፍ ቃል ዳግም አስጀምር",
+  "auth.reset_help": "አዲስ የይለፍ ቃል ለማስያዝ ሊንክ በኢሜይል እንልክልሃለን።",
+  "auth.send_reset": "የዳግም ማስጀመሪያ ሊንክ ላክ",
+  "auth.reset_sent": "የይለፍ ቃል ማስጀመሪያ ሊንክ ኢሜይልህን ተመልከት።",
+  "auth.back_signin": "ወደ መግቢያ ተመለስ",
+  "auth.update_title": "አዲስ የይለፍ ቃል አስይዝ",
+  "auth.update_help": "ይህን ገጽ ከኢሜይልህ ሊንክ ክፈት።",
+  "auth.update_btn": "የይለፍ ቃል አዘምን",
+  "auth.updated": "የይለፍ ቃል ተቀይሯል። በመዘዋወር ላይ…",
+  "auth.created": "መለያ ተፈጥሯል። ለማረጋገጥ ኢሜይልህን ተመልክተህ ግባ።",
+  "auth.import_local": "በዚህ መሣሪያ የተቀመጡ ስሌቶችን ወደ መለያህ አስገባ?",
+  "auth.pw_min": "የይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት።",
+
   "footer.tag": "InflaTax · የከርሰ-ምሽት + ግሽበት ግብር ማስያ (ሰንጠረዥ B)",
 };
 
@@ -219,9 +284,12 @@ const om: Dict = {
   "common.saved_account": "Herrega keetti olkaa'ame",
   "common.saved_device": "Meeshaa kana irratti olkaa'ame",
 
-  "home.title": "Dhiibbaan gatii taaksii hammam dabaluu akka si baasu.",
+  "home.title": "Taaksii bara darbee dhiibbaa gatiitiin haqaan sirreessi.",
   "home.subtitle":
-    "Gurgurtaa waliigalaa (galii taaksii) galchi. InflaTax taaksii bara darbee (TOT + taaksii bu'aa) shallaga, sana booda saffisa sadarkaa dhiibbaa gatii dura fi booda fayyadamuun taaksii bara kanaa — Taaksii Bara 2018 — argata.",
+    "Saffisni \"sadarkaa\" haaraan yeroo baay'ee waan daldalaan bara darbee kaffale caalaa baay'ee xiqqeessa. Kanaaf, gara saffisa haaraatti deebi'uu mannaa, taaksiin bara kanaa taaksii bara darbee qabatee dabala dhiibbaa gatii qofa itti dabala.",
+  "home.why_title": "Maaliif barbaachise",
+  "home.why_body":
+    "Fakkeenyaaf Abbabaan bara darbee 50,370 kaffale (TOT + taaksii bu'aa). Saffisni sadarkaa haaraan qofti gara ~9,000 qofa kaffalchiisuu danda'a — hir'ina guddaa. Kanaa mannaa, taaksiin bara kanaa = taaksii bara darbee + (sadarkaa gurgurtaa dhiibbaadhaan sirraa'e irratti − sadarkaa gurgurtaa bara darbee irratti). Taaksiin dhiibbaa gatii waliin deema malee waan kaffalame gadi hin bu'u.",
   "home.latest": "Bu'aa dhiyeenyaa",
   "home.history": "Seenaa",
   "home.click_row": "Ibsa guutuu argachuuf sarara gadii cuqaasi.",
@@ -232,6 +300,7 @@ const om: Dict = {
   "form.name": "Maqaa Kafalaa Gibiraa",
   "form.tin": "TIN",
   "form.business_type": "Gosa daldala",
+  "form.is_service": "Daldala tajaajilaa (10% TOT itti fayyadami) — kan biraatiif saaqi",
   "form.turnover": "Gurgurtaa waliigalaa / galii taaksii (Birrii)",
   "form.lastyear_tax": "Taaksii bara darbee kaffalame (filannoo)",
   "form.err_need_input": "Gurgurtaa yookiin taaksii bara darbee galchi.",
@@ -275,6 +344,9 @@ const om: Dict = {
   "analysis.result_title": "Taaksii bara kanaa (Taaksii Bara 2018)",
   "analysis.plus_diff": "+ Garaagaruma dhiibbaa",
   "analysis.chart": "Dhiibbaa dura fi booda",
+  "analysis.result_note":
+    "Gara saffisa sadarkaa haaraatti hin deebinu — taaksii bara darbee qabannee garaagaruma dhiibbaa qofa dabalna.",
+  "analysis.tot_dropped": "Tajaajila miti — TOT hafe",
 
   "profile.title": "Profaayilii",
   "profile.signed_in_as": "Akka {email} seente",
@@ -296,6 +368,34 @@ const om: Dict = {
   "profile.update": "Haaromsi",
   "profile.pw_updated": "Jechi iccitii jijjiirame.",
   "profile.language": "Afaan",
+
+  "common.err_load": "Seenaa fe'uun hin milkoofne.",
+  "common.err_save": "Shallaggii olkaa'uun hin milkoofne.",
+
+  "auth.signin": "Seeni",
+  "auth.create_account": "Herrega uumi",
+  "auth.email": "Imeelii",
+  "auth.password": "Jecha iccitii",
+  "auth.new_password": "Jecha iccitii haaraa",
+  "auth.no_account": "Herrega hin qabduu?",
+  "auth.have_account": "Herrega qabdaa?",
+  "auth.forgot": "Jecha iccitii dagattee?",
+  "auth.continue_anon": "Osoo hin seenin itti fufi →",
+  "auth.reset_title": "Jecha iccitii haaromsi",
+  "auth.reset_help":
+    "Jecha iccitii haaraa qindeeffachuuf liinkii imeeliidhaan siif ergina.",
+  "auth.send_reset": "Liinkii haaromsaa ergi",
+  "auth.reset_sent": "Liinkii jecha iccitii haaromsaa imeelii kee keessaa ilaali.",
+  "auth.back_signin": "Gara seensaatti deebi'i",
+  "auth.update_title": "Jecha iccitii haaraa qindeessi",
+  "auth.update_help": "Fuula kana liinkii imeelii kee irraa bani.",
+  "auth.update_btn": "Jecha iccitii haaromsi",
+  "auth.updated": "Jechi iccitii haaromfame. Deebi'aa jira…",
+  "auth.created":
+    "Herregni uumame. Mirkaneessuuf imeelii kee ilaaltee seeni.",
+  "auth.import_local":
+    "Shallaggii meeshaa kana irratti olkaa'aman gara herrega keetti galchuu?",
+  "auth.pw_min": "Jecha iccitii xiqqaate qubee 6 ta'uu qaba.",
 
   "footer.tag": "InflaTax · shallagaa taaksii sadarkaa + dhiibbaa gatii (Gabatee B)",
 };

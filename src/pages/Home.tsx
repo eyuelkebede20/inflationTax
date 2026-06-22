@@ -26,7 +26,7 @@ export default function Home() {
     setLoadingHistory(true);
     getHistory(userId)
       .then((items) => active && setHistory(items))
-      .catch((e) => active && setError(e.message ?? "Failed to load history."))
+      .catch(() => active && setError(t("common.err_load")))
       .finally(() => active && setLoadingHistory(false));
     return () => {
       active = false;
@@ -40,8 +40,8 @@ export default function Home() {
     try {
       const saved = await saveCalculation(userId, result, meta);
       setHistory((prev) => [saved, ...prev]);
-    } catch (e) {
-      setError((e as Error).message ?? "Failed to save calculation.");
+    } catch {
+      setError(t("common.err_save"));
     } finally {
       setSaving(false);
     }
@@ -52,6 +52,15 @@ export default function Home() {
       <div className="hero">
         <h1>{t("home.title")}</h1>
         <p>{t("home.subtitle")}</p>
+      </div>
+
+      <div className="callout">
+        <span className="ico">💡</span>
+        <div className="body">
+          <strong>{t("home.why_title")}</strong>
+          <br />
+          {t("home.why_body")}
+        </div>
       </div>
 
       {error && <div className="alert error">{error}</div>}

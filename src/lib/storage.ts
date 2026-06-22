@@ -57,6 +57,7 @@ interface DbRow {
   inflation_rate: number;
   tot_rate: number;
   profit_margin: number;
+  is_service: boolean;
   profit_base: number;
   profit_tax_amt: number;
   tot: number;
@@ -82,6 +83,7 @@ function rowToItem(r: DbRow): HistoryItem {
     inflationRate: Number(r.inflation_rate),
     totRate: Number(r.tot_rate),
     profitMargin: Number(r.profit_margin),
+    isService: Boolean(r.is_service),
     profitBase: Number(r.profit_base),
     profitTaxAmt: Number(r.profit_tax_amt),
     tot: Number(r.tot),
@@ -113,6 +115,7 @@ function itemToInsert(userId: string, r: CalcResult, m: Meta) {
     inflation_rate: r.inflationRate,
     tot_rate: r.totRate,
     profit_margin: r.profitMargin,
+    is_service: r.isService,
     profit_base: r.profitBase,
     profit_tax_amt: r.profitTaxAmt,
     tot: r.tot,

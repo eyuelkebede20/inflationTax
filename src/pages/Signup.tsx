@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useT } from "../lib/i18n";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export default function Signup() {
     setError(null);
     setMessage(null);
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t("auth.pw_min"));
       return;
     }
     setBusy(true);
@@ -26,25 +28,22 @@ export default function Signup() {
       setError(error.message);
       return;
     }
-    // If email confirmation is on, there is no active session yet.
     if (data.session) {
       navigate("/");
     } else {
-      setMessage(
-        "Account created. Check your email to confirm, then sign in."
-      );
+      setMessage(t("auth.created"));
     }
   }
 
   return (
     <div className="container center-page">
       <div className="card">
-        <h2>Create account</h2>
+        <h2>{t("auth.create_account")}</h2>
         <form onSubmit={handleSubmit}>
           {error && <div className="alert error">{error}</div>}
           {message && <div className="alert ok">{message}</div>}
           <label className="field">
-            <span className="label">Email</span>
+            <span className="label">{t("auth.email")}</span>
             <input
               type="email"
               required
@@ -53,7 +52,7 @@ export default function Signup() {
             />
           </label>
           <label className="field">
-            <span className="label">Password</span>
+            <span className="label">{t("auth.password")}</span>
             <input
               type="password"
               required
@@ -62,14 +61,14 @@ export default function Signup() {
             />
           </label>
           <button className="btn block" type="submit" disabled={busy}>
-            {busy ? <span className="spinner" /> : "Sign up"}
+            {busy ? <span className="spinner" /> : t("auth.create_account")}
           </button>
         </form>
         <hr className="divider" />
         <p className="small muted" style={{ margin: 0 }}>
-          Already have an account? <Link to="/login">Sign in</Link>
+          {t("auth.have_account")} <Link to="/login">{t("auth.signin")}</Link>
           <br />
-          <Link to="/">Continue without signing in →</Link>
+          <Link to="/">{t("auth.continue_anon")}</Link>
         </p>
       </div>
     </div>

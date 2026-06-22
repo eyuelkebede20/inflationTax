@@ -68,7 +68,7 @@ export default function Profile() {
     setPwMsg(null);
     setPwErr(null);
     if (newPassword.length < 6) {
-      setPwErr("Password must be at least 6 characters.");
+      setPwErr(t("auth.pw_min"));
       return;
     }
     const { error } = await supabase!.auth.updateUser({ password: newPassword });

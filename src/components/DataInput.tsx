@@ -21,6 +21,7 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
   const [name, setName] = useState("");
   const [tin, setTin] = useState("");
   const [businessType, setBusinessType] = useState("");
+  const [isService, setIsService] = useState(true);
   const [turnover, setTurnover] = useState("");
   const [lastYearTax, setLastYearTax] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
     const result = computeResult(config, {
       turnover: hasTurnover ? tv : undefined,
       lastYearTax: hasTax ? lv : undefined,
+      isService,
     });
     onCalculated(result, {
       name: name.trim() || null,
@@ -58,6 +60,7 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
     setName("");
     setTin("");
     setBusinessType("");
+    setIsService(true);
     setTurnover("");
     setLastYearTax("");
   }
@@ -98,6 +101,15 @@ export default function DataInput({ config, onCalculated, saving }: Props) {
             />
           </label>
         </div>
+
+        <label className="check-field">
+          <input
+            type="checkbox"
+            checked={isService}
+            onChange={(e) => setIsService(e.target.checked)}
+          />
+          <span>{t("form.is_service")}</span>
+        </label>
 
         <div className="row">
           <label className="field grow">
