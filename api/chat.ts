@@ -86,7 +86,8 @@ export default async function handler(req: any, res: any) {
       generationConfig: { temperature: 0.4, maxOutputTokens: 600 },
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
     const gres = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
